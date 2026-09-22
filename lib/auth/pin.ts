@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function verifyAdminPin(pin: string): Promise<boolean> {
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
   const { data, error } = await supabase
     .from('settings')
     .select('value')
