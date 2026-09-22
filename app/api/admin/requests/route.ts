@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
   const { searchParams } = new URL(req.url);
 
   const search       = searchParams.get('search') ?? '';
@@ -21,11 +21,12 @@ export async function GET(req: NextRequest) {
     .from('requests')
     .select(`
       *,
-      outlet:outlets(id, name, code),
+      outlet:outlets(id, name),
       request_items(*),
       request_photos(id),
       purchase_receipts(id)
     `, { count: 'exact' });
+
 
   if (outlet_id)  query = query.eq('outlet_id', outlet_id);
   if (status)     query = query.eq('status', status);
@@ -61,7 +62,7 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'ID diperlukan.' }, { status: 400 });
 
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
   const { error } = await supabase.from('requests').delete().eq('id', id);
   if (error) return NextResponse.json({ error: 'Gagal menghapus permintaan.' }, { status: 500 });
 

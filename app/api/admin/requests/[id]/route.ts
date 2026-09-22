@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
 
   const { data, error } = await supabase
     .from('requests')
     .select(`
       *,
-      outlet:outlets(id, name, code),
+      outlet:outlets(id, name),
       request_items(*),
       request_photos(*),
       purchase_receipts(*)
@@ -50,7 +50,7 @@ export async function PATCH(
 
   updateData.updated_at = new Date().toISOString();
 
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
   const { data, error } = await supabase
     .from('requests')
     .update(updateData)
@@ -70,7 +70,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
 
   const { error } = await supabase.from('requests').delete().eq('id', id);
   if (error) {

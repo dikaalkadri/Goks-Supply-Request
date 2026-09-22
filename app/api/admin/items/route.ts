@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function GET() {
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
   const { data, error } = await supabase
     .from('items')
     .select('*')
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   if (!name?.trim()) return NextResponse.json({ error: 'Nama barang wajib diisi.' }, { status: 400 });
   if (!unit?.trim()) return NextResponse.json({ error: 'Satuan wajib diisi.' }, { status: 400 });
 
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
   const { data, error } = await supabase
     .from('items')
     .insert({ name: name.trim(), unit: unit.trim(), category: category?.trim() || null })
@@ -42,7 +42,7 @@ export async function PATCH(req: NextRequest) {
   if (category !== undefined)  updateData.category = category;
   if (is_active !== undefined) updateData.is_active = is_active;
 
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
   const { data, error } = await supabase
     .from('items')
     .update(updateData)

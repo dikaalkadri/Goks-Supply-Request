@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { formatDateExport, statusLabel, purchaseStatusLabel } from '@/lib/utils/format';
 
 export async function GET(req: NextRequest) {
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
   const { searchParams } = new URL(req.url);
 
   const outlet_id  = searchParams.get('outlet_id') ?? '';

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // GET: admin dashboard stats
 export async function GET() {
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
 
   const [totalRes, todayRes, statusRes, purchaseRes, noReceiptRes] = await Promise.all([
     supabase.from('requests').select('id', { count: 'exact', head: true }),
