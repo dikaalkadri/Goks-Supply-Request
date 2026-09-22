@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(
   req: NextRequest,
@@ -17,7 +17,7 @@ export async function POST(
     return NextResponse.json({ error: 'Data tidak lengkap.' }, { status: 400 });
   }
 
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
 
   // Verify edit_token
   const { data: existing, error: fetchErr } = await supabase
