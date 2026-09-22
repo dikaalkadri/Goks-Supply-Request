@@ -6,7 +6,7 @@ import { getTodayYYMMDD } from '@/lib/utils/format';
  * Sequential per day, atomic via DB query
  */
 export async function generateRequestCode(): Promise<string> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const dateStr = getTodayYYMMDD();
   const prefix = `REQ-${dateStr}-`;
 
