@@ -10,19 +10,18 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, code } = body as { name: string; code: string };
+  const { name } = body as { name: string };
   if (!name?.trim()) return NextResponse.json({ error: 'Nama outlet wajib diisi.' }, { status: 400 });
-  if (!code?.trim()) return NextResponse.json({ error: 'Kode outlet wajib diisi.' }, { status: 400 });
 
   const supabase = await createServerClient();
   const { data, error } = await supabase
     .from('outlets')
-    .insert({ name: name.trim(), code: code.trim().toUpperCase() })
+    .insert({ name: name.trim() })
     .select()
     .single();
 
   if (error) {
-    if (error.code === '23505') return NextResponse.json({ error: 'Kode outlet sudah digunakan.' }, { status: 400 });
+    if (error.code === '23505') return NextResponse.json({ error: 'Nama outlet sudah digunakan.' }, { status: 400 });
     return NextResponse.json({ error: 'Gagal menambah outlet.' }, { status: 500 });
   }
   return NextResponse.json({ data }, { status: 201 });
@@ -30,12 +29,11 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
-  const { id, name, code, is_active } = body;
+  const { id, name, is_active } = body;
   if (!id) return NextResponse.json({ error: 'ID diperlukan.' }, { status: 400 });
 
   const updateData: Record<string, unknown> = {};
   if (name !== undefined)      updateData.name = name;
-  if (code !== undefined)      updateData.code = code;
   if (is_active !== undefined) updateData.is_active = is_active;
 
   const supabase = await createServerClient();

@@ -8,7 +8,6 @@ export type PurchaseStatus = 'not_purchased' | 'purchased';
 export interface Outlet {
   id: string;
   name: string;
-  code: string;
   is_active: boolean;
   created_at: string;
 }

@@ -280,7 +280,7 @@ export default function HomePage() {
                 label="Outlet"
                 required
                 placeholder="Pilih Outlet"
-                options={outlets.map((o) => ({ value: o.id, label: o.name, sub: o.code }))}
+                options={outlets.map((o) => ({ value: o.id, label: o.name }))}
                 value={outletId}
                 onChange={setOutletId}
                 error={errors.outlet}

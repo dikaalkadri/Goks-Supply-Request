@@ -21,7 +21,6 @@ export default function AdminOutletsPage() {
   
   // Form states
   const [name, setName] = useState('');
-  const [code, setCode] = useState('');
   const [isActive, setIsActive] = useState(true);
 
   const fetchOutlets = async () => {
@@ -41,12 +40,10 @@ export default function AdminOutletsPage() {
     if (outlet) {
       setEditId(outlet.id);
       setName(outlet.name);
-      setCode(outlet.code);
       setIsActive(outlet.is_active);
     } else {
       setEditId(null);
       setName('');
-      setCode('');
       setIsActive(true);
     }
     setModalOpen(true);
@@ -54,14 +51,14 @@ export default function AdminOutletsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !code.trim()) {
-      toast.error('Nama dan Kode wajib diisi.');
+    if (!name.trim()) {
+      toast.error('Nama outlet wajib diisi.');
       return;
     }
     setSaving(true);
     try {
       const method = editId ? 'PATCH' : 'POST';
-      const body = { id: editId, name, code, is_active: isActive };
+      const body = { id: editId, name, is_active: isActive };
       
       const res = await fetch('/api/admin/outlets', {
         method,
@@ -104,7 +101,6 @@ export default function AdminOutletsPage() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
                     <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Nama Outlet</th>
-                    <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Kode</th>
                     <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs text-center">Status</th>
                     <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs text-right">Aksi</th>
                   </tr>
@@ -118,7 +114,6 @@ export default function AdminOutletsPage() {
                         <td className="px-4 py-3 font-medium text-gray-900 flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-gray-400" /> {outlet.name}
                         </td>
-                        <td className="px-4 py-3 text-gray-600 font-mono text-xs font-semibold">{outlet.code}</td>
                         <td className="px-4 py-3 text-center">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${outlet.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                             {outlet.is_active ? 'Aktif' : 'Nonaktif'}
@@ -141,8 +136,7 @@ export default function AdminOutletsPage() {
 
       <Modal open={modalOpen} onClose={() => !saving && setModalOpen(false)} title={editId ? 'Edit Outlet' : 'Tambah Outlet'}>
         <form onSubmit={handleSave} className="space-y-4">
-          <Input label="Nama Outlet" required value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: Pauh Kambar" />
-          <Input label="Kode Outlet" required value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="Contoh: PKB" maxLength={5} />
+          <Input label="Nama Outlet" required value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: 01. TAPLAU" />
           
           {editId && (
             <div className="flex items-center gap-2 mt-4 p-3 bg-gray-50 rounded-xl">
