@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('requests')
@@ -50,7 +50,7 @@ export async function PATCH(
 
   updateData.updated_at = new Date().toISOString();
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data, error } = await supabase
     .from('requests')
     .update(updateData)
@@ -70,7 +70,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { error } = await supabase.from('requests').delete().eq('id', id);
   if (error) {

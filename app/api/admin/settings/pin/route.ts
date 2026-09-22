@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   }
 
   const hashed = await hashPin(new_pin);
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { error } = await supabase
     .from('settings')

@@ -20,7 +20,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Token tidak valid.' }, { status: 403 });
   }
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   // Verify edit_token
   const { data: existing, error: fetchErr } = await supabase

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 
 export async function GET() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data, error } = await supabase.from('outlets').select('*').order('name');
   if (error) return NextResponse.json({ error: 'Gagal memuat outlet.' }, { status: 500 });
   return NextResponse.json({ data });
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   if (!name?.trim()) return NextResponse.json({ error: 'Nama outlet wajib diisi.' }, { status: 400 });
   if (!code?.trim()) return NextResponse.json({ error: 'Kode outlet wajib diisi.' }, { status: 400 });
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data, error } = await supabase
     .from('outlets')
     .insert({ name: name.trim(), code: code.trim().toUpperCase() })
@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest) {
   if (code !== undefined)      updateData.code = code;
   if (is_active !== undefined) updateData.is_active = is_active;
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data, error } = await supabase.from('outlets').update(updateData).eq('id', id).select().single();
   if (error) return NextResponse.json({ error: 'Gagal memperbarui outlet.' }, { status: 500 });
   return NextResponse.json({ data });

@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 
 // GET: admin dashboard stats
 export async function GET() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const [totalRes, todayRes, statusRes, purchaseRes, noReceiptRes] = await Promise.all([
     supabase.from('requests').select('id', { count: 'exact', head: true }),

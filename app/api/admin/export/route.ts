@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { formatDateExport, statusLabel, purchaseStatusLabel } from '@/lib/utils/format';
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { searchParams } = new URL(req.url);
 
   const outlet_id  = searchParams.get('outlet_id') ?? '';

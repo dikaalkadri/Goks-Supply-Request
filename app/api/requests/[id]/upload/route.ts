@@ -17,7 +17,7 @@ export async function POST(
     return NextResponse.json({ error: 'Data tidak lengkap.' }, { status: 400 });
   }
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   // Verify edit_token
   const { data: existing, error: fetchErr } = await supabase

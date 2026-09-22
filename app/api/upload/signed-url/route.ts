@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Token tidak valid.' }, { status: 403 });
   }
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data, error } = await supabase.storage
     .from(bucket)
     .createSignedUploadUrl(path);

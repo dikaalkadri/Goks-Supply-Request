@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { searchParams } = new URL(req.url);
 
   const search       = searchParams.get('search') ?? '';
@@ -61,7 +61,7 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'ID diperlukan.' }, { status: 400 });
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { error } = await supabase.from('requests').delete().eq('id', id);
   if (error) return NextResponse.json({ error: 'Gagal menghapus permintaan.' }, { status: 500 });
 

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Generate unique request code
     const request_code = await generateRequestCode();
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { searchParams } = new URL(req.url);
 
   const search       = searchParams.get('search') ?? '';
