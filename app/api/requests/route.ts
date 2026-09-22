@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
     .from('requests')
     .select(`
       *,
-      outlet:outlets(id, name, code),
+      outlet:outlets(id, name),
       request_items(*),
       request_photos(id),
       purchase_receipts(id)
