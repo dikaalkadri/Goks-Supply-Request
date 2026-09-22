@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // Server-side signed URL for Supabase Storage upload
 export async function POST(req: NextRequest) {
@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Token tidak valid.' }, { status: 403 });
   }
 
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
+
   const { data, error } = await supabase.storage
     .from(bucket)
     .createSignedUploadUrl(path);
