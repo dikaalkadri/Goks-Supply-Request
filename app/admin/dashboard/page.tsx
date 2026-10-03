@@ -30,7 +30,6 @@ export default function AdminDashboardPage() {
     { label: 'Total Permintaan',  value: stats.total,               color: 'text-gray-900',    bg: 'bg-gray-50 border-gray-200',    href: '/admin/requests' },
     { label: 'Hari Ini',          value: stats.today,               color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200',    href: '/admin/requests' },
     { label: 'Menunggu',          value: stats.pending,             color: 'text-yellow-700',  bg: 'bg-yellow-50 border-yellow-200', href: '/admin/requests?status=pending' },
-    { label: 'Diproses',          value: stats.processing,          color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200',    href: '/admin/requests?status=processing' },
     { label: 'Selesai',           value: stats.completed,           color: 'text-green-700',   bg: 'bg-green-50 border-green-200',  href: '/admin/requests?status=completed' },
     { label: 'Ditolak',           value: stats.rejected,            color: 'text-red-700',     bg: 'bg-red-50 border-red-200',      href: '/admin/requests?status=rejected' },
     { label: 'Belum Dibeli',      value: stats.not_purchased,       color: 'text-yellow-700',  bg: 'bg-yellow-50 border-yellow-200', href: '/admin/requests?purchase_status=not_purchased' },

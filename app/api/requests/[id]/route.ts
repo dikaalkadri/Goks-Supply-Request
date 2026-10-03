@@ -12,7 +12,7 @@ export async function GET(
     .from('requests')
     .select(`
       *,
-      outlet:outlets(id, name, code),
+      outlet:outlets(id, name),
       request_items(*),
       request_photos(*),
       purchase_receipts(*)

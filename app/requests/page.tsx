@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, Filter, ChevronRight, Package, SlidersHorizontal, X } from 'lucide-react';
 import PublicNav from '@/components/layout/PublicNav';
-import { StatusBadge, PurchaseStatusBadge } from '@/components/ui/StatusBadge';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import Button from '@/components/ui/Button';
 import type { Request, Outlet } from '@/types';
@@ -115,7 +115,6 @@ export default function RequestsPage() {
               >
                 <option value="">Semua Status</option>
                 <option value="pending">Menunggu</option>
-                <option value="processing">Diproses</option>
                 <option value="completed">Selesai</option>
                 <option value="rejected">Ditolak</option>
               </select>
@@ -164,10 +163,7 @@ export default function RequestsPage() {
                         {req.request_items?.length ?? 0} barang
                       </p>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <StatusBadge status={req.status} />
-                      <PurchaseStatusBadge status={req.purchase_status} />
-                    </div>
+                    <StatusBadge status={req.status} />
                     <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-primary-500 transition-colors flex-shrink-0 self-center" />
                   </div>
                 </div>

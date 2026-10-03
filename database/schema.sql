@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS request_items (
   unit        TEXT NOT NULL,
   qty         NUMERIC(10,2) NOT NULL CHECK (qty > 0),
   is_manual   BOOLEAN NOT NULL DEFAULT false,
+  photo_path  TEXT,
+  status      TEXT NOT NULL DEFAULT 'pending'
+              CHECK (status IN ('pending','completed','rejected')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

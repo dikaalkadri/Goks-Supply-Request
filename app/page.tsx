@@ -9,10 +9,15 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { compressConditionPhoto, validateImageFile } from '@/lib/utils/image-compress';
-import type { Outlet, Item, ItemFormData } from '@/types';
+import type { Outlet, Item, ItemFormData, CreateRequestResponse } from '@/types';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils/cn';
+
+interface ItemPhoto {
+  file: File;
+  preview: string;
+}
 
 interface SuccessState {
   request_code: string;
@@ -33,8 +38,8 @@ export default function HomePage() {
   const [requesterName, setRequesterName] = useState('');
   const [note, setNote] = useState('');
   const [selectedItems, setSelectedItems] = useState<ItemFormData[]>([]);
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  // Optional photo per item, same index as selectedItems
+  const [itemPhotos, setItemPhotos] = useState<(ItemPhoto | null)[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -62,6 +67,7 @@ export default function HomePage() {
       ...prev,
       { item_id: '', item_name: '', unit: '', qty: 1, is_manual: false },
     ]);
+    setItemPhotos((prev) => [...prev, null]);
   };
 
   const addManualItem = () => {
@@ -69,6 +75,7 @@ export default function HomePage() {
       ...prev,
       { item_id: null, item_name: '', unit: '', qty: 1, is_manual: true },
     ]);
+    setItemPhotos((prev) => [...prev, null]);
   };
 
   const updateItem = (index: number, field: string, value: string | number) => {
@@ -95,25 +102,24 @@ export default function HomePage() {
 
   const removeItem = (index: number) => {
     setSelectedItems((prev) => prev.filter((_, i) => i !== index));
+    setItemPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    const remaining = 3 - photoFiles.length;
-    const toAdd = files.slice(0, remaining);
+  const setItemPhoto = (index: number, file: File | null) => {
+    setItemPhotos((prev) => {
+      const updated = [...prev];
+      updated[index] = file ? { file, preview: URL.createObjectURL(file) } : null;
+      return updated;
+    });
+  };
 
-    for (const file of toAdd) {
-      const err = validateImageFile(file);
-      if (err) { toast.error(err); continue; }
-      setPhotoPreviews((p) => [...p, URL.createObjectURL(file)]);
-      setPhotoFiles((p) => [...p, file]);
-    }
+  const handleItemPhotoChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     e.target.value = '';
-  };
-
-  const removePhoto = (index: number) => {
-    setPhotoFiles((p) => p.filter((_, i) => i !== index));
-    setPhotoPreviews((p) => p.filter((_, i) => i !== index));
+    if (!file) return;
+    const err = validateImageFile(file);
+    if (err) { toast.error(err); return; }
+    setItemPhoto(index, file);
   };
 
   const validate = (): boolean => {
@@ -159,42 +165,67 @@ export default function HomePage() {
         return;
       }
 
-      const { request_code, request_id, edit_token } = result.data;
+      const { request_code, request_id, edit_token, item_ids } = result.data as CreateRequestResponse;
 
-      // Upload photos if any
-      if (photoFiles.length > 0) {
-        for (const [idx, file] of photoFiles.entries()) {
-          try {
-            const compressed = await compressConditionPhoto(file);
-            const storagePath = `${request_code}/photo-${idx + 1}.webp`;
-
-            const signedRes = await fetch('/api/upload/signed-url', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                bucket: 'request-condition-photos',
-                path: storagePath,
-                token: edit_token,
-              }),
-            });
-
-            if (signedRes.ok) {
-              const { signedUrl } = await signedRes.json();
-              await fetch(signedUrl, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'image/webp' },
-                body: compressed,
-              });
-              await fetch(`/api/requests/${request_id}/upload`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ storage_path: storagePath, edit_token, type: 'photo' }),
-              });
-            }
-          } catch {
-            // Non-blocking — request already created
-          }
+      // Upload optional item photos (item_ids follow the same order as selectedItems)
+      let failedPhotos = 0;
+      for (const [idx, photo] of itemPhotos.entries()) {
+        const requestItemId = item_ids?.[idx];
+        if (!photo) continue;
+        if (!requestItemId) {
+          console.error('[item-photo] missing request_item_id', { idx, item_ids });
+          failedPhotos++;
+          continue;
         }
+        let step = 'compress';
+        try {
+          // Fall back to the original file if compression is not supported by the browser
+          const compressed = await compressConditionPhoto(photo.file).catch((err) => {
+            console.warn('[item-photo] compression failed, uploading original', err);
+            return photo.file;
+          });
+          const storagePath = `${request_code}/item-${requestItemId}.webp`;
+          step = 'signed-url';
+
+          const signedRes = await fetch('/api/upload/signed-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bucket: 'request-condition-photos',
+              path: storagePath,
+              token: edit_token,
+            }),
+          });
+
+          if (!signedRes.ok) throw new Error(`${signedRes.status} ${await signedRes.text()}`);
+          const { signedUrl } = await signedRes.json();
+          step = 'storage-put';
+          const uploadRes = await fetch(signedUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': compressed.type || 'image/webp' },
+            body: compressed,
+          });
+          if (!uploadRes.ok) throw new Error(`${uploadRes.status} ${await uploadRes.text()}`);
+          step = 'save';
+          const saveRes = await fetch(`/api/requests/${request_id}/upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              storage_path: storagePath,
+              edit_token,
+              type: 'item_photo',
+              request_item_id: requestItemId,
+            }),
+          });
+          if (!saveRes.ok) throw new Error(`${saveRes.status} ${await saveRes.text()}`);
+        } catch (err) {
+          // Non-blocking — request already created
+          console.error(`[item-photo] failed at ${step}:`, err instanceof Error ? err.message : err);
+          failedPhotos++;
+        }
+      }
+      if (failedPhotos > 0) {
+        toast.error(`Permintaan terkirim, tetapi ${failedPhotos} foto barang gagal diunggah.`);
       }
 
       // Save edit_token to localStorage
@@ -242,8 +273,7 @@ export default function HomePage() {
                   setRequesterName('');
                   setNote('');
                   setSelectedItems([]);
-                  setPhotoFiles([]);
-                  setPhotoPreviews([]);
+                  setItemPhotos([]);
                 }}
               >
                 Buat Baru
@@ -356,6 +386,35 @@ export default function HomePage() {
                       error={errors[`item_unit_${index}`]}
                     />
                   </div>
+
+                  {itemPhotos[index] ? (
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={itemPhotos[index]!.preview} alt={`Foto barang ${index + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setItemPhoto(index, null)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
+                        >
+                          <Trash2 className="h-3 w-3 text-white" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-400">Foto barang terlampir</p>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-dashed border-gray-200 hover:border-primary-400 hover:bg-primary-50 cursor-pointer transition-colors w-fit">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => handleItemPhotoChange(index, e)}
+                      />
+                      <Camera className="h-4 w-4 text-primary-600 flex-shrink-0" />
+                      <span className="text-sm font-medium text-gray-700">Tambah Foto</span>
+                      <span className="text-xs text-gray-400">(opsional)</span>
+                    </label>
+                  )}
                 </div>
               ))}
 
@@ -383,50 +442,6 @@ export default function HomePage() {
                 rows={3}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400 resize-none hover:border-gray-300 transition-all"
               />
-            </div>
-
-            {/* Foto Kondisi */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
-              <div className="flex items-center gap-2">
-                <Camera className="h-4 w-4 text-gray-600" />
-                <h2 className="font-semibold text-gray-900">Foto Kondisi Barang</h2>
-                <span className="text-xs text-gray-400 font-normal">(opsional)</span>
-              </div>
-
-              {photoPreviews.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {photoPreviews.map((src, i) => (
-                    <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-gray-200">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt={`Foto ${i+1}`} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(i)}
-                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
-                      >
-                        <Trash2 className="h-3 w-3 text-white" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {photoFiles.length < 3 && (
-                <label className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-gray-200 hover:border-primary-400 hover:bg-primary-50 cursor-pointer transition-colors">
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                    multiple
-                    className="hidden"
-                    onChange={handlePhotoChange}
-                  />
-                  <Camera className="h-5 w-5 text-primary-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">📷 Tambah Foto</p>
-                    <p className="text-xs text-gray-400">{3 - photoFiles.length} slot tersisa · JPG, PNG, WebP</p>
-                  </div>
-                </label>
-              )}
             </div>
 
             {/* Submit */}

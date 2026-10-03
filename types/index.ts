@@ -4,6 +4,7 @@
 
 export type RequestStatus = 'pending' | 'processing' | 'completed' | 'rejected';
 export type PurchaseStatus = 'not_purchased' | 'purchased';
+export type ItemStatus = 'pending' | 'completed' | 'rejected';
 
 export interface Outlet {
   id: string;
@@ -48,6 +49,8 @@ export interface RequestItem {
   unit: string;
   qty: number;
   is_manual: boolean;
+  photo_path?: string | null;
+  status?: ItemStatus; // undefined until migration_request_item_status.sql is applied
   created_at: string;
 }
 
@@ -114,6 +117,7 @@ export interface CreateRequestResponse {
   request_code: string;
   request_id: string;
   edit_token: string;
+  item_ids: string[];
 }
 
 // ============================================================

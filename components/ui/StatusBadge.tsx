@@ -44,3 +44,4 @@ export function PurchaseStatusBadge({ status, className }: PurchaseBadgeProps) {
     </span>
   );
 }
+

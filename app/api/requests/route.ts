@@ -62,8 +62,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Insert request items
+    // Insert request items. IDs are generated here (not read back via RETURNING,
+    // which can come back empty under RLS) so the client can attach per-item photos.
     const itemsToInsert = items.map((item) => ({
+      id: crypto.randomUUID(),
       request_id: request.id,
       item_id: item.is_manual ? null : item.item_id,
       item_name: item.item_name.trim(),
@@ -91,6 +93,8 @@ export async function POST(req: NextRequest) {
         request_code: request.request_code,
         request_id: request.id,
         edit_token: request.edit_token,
+        // Same order as `items` in the request body, used to attach per-item photos
+        item_ids: itemsToInsert.map((i) => i.id),
       },
     });
   } catch (e) {

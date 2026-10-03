@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, SlidersHorizontal, Trash2, Edit, Eye, Download, X } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { StatusBadge, PurchaseStatusBadge } from '@/components/ui/StatusBadge';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Button from '@/components/ui/Button';
@@ -163,7 +163,6 @@ export default function AdminRequestsPage() {
               <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }} className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
                 <option value="">Semua Status</option>
                 <option value="pending">Menunggu</option>
-                <option value="processing">Diproses</option>
                 <option value="completed">Selesai</option>
                 <option value="rejected">Ditolak</option>
               </select>
@@ -212,10 +211,7 @@ export default function AdminRequestsPage() {
                       <p className="font-bold text-primary-700 text-sm">{req.request_code}</p>
                       <p className="text-xs text-gray-500">{formatDateShort(req.created_at)}</p>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <StatusBadge status={req.status} />
-                      <PurchaseStatusBadge status={req.purchase_status} />
-                    </div>
+                    <StatusBadge status={req.status} />
                   </div>
                   <p className="text-sm font-medium text-gray-900">{req.outlet?.name}</p>
                   <p className="text-xs text-gray-500">{req.requester_name} · {req.request_items?.length ?? 0} barang</p>
@@ -247,8 +243,7 @@ export default function AdminRequestsPage() {
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Outlet</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Pengaju</th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Barang</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Request</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Pembelian</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nota</th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
                     </tr>
@@ -266,7 +261,6 @@ export default function AdminRequestsPage() {
                         <td className="px-4 py-3 text-gray-700">{req.requester_name}</td>
                         <td className="px-4 py-3 text-right text-gray-700 font-semibold">{req.request_items?.length ?? 0}</td>
                         <td className="px-4 py-3 text-center"><StatusBadge status={req.status} /></td>
-                        <td className="px-4 py-3 text-center"><PurchaseStatusBadge status={req.purchase_status} /></td>
                         <td className="px-4 py-3 text-center">
                           {(req.purchase_receipts?.length ?? 0) > 0 ? (
                             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Ada</span>

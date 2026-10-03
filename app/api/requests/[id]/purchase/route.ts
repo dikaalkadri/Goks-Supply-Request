@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // Public: update purchase_status with valid edit_token
 export async function PATCH(
@@ -20,7 +20,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Token tidak valid.' }, { status: 403 });
   }
 
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
 
   // Verify edit_token
   const { data: existing, error: fetchErr } = await supabase

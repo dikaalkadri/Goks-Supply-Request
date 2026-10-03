@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminAuthenticatedFromRequest } from '@/lib/auth/admin-session';
 
-export default function proxy(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Protect all /admin/* routes EXCEPT /admin itself (PIN login page)
@@ -9,7 +9,7 @@ export default function proxy(req: NextRequest) {
   const isAdminApiRoute = pathname.startsWith('/api/admin/') && pathname !== '/api/admin/auth';
 
   if (isAdminRoute || isAdminApiRoute) {
-    if (!isAdminAuthenticatedFromRequest(req)) {
+    if (!(await isAdminAuthenticatedFromRequest(req))) {
       if (isAdminApiRoute) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }

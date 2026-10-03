@@ -9,7 +9,8 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { LoadingState } from '@/components/ui/States';
-import type { Request, Outlet } from '@/types';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import type { Request, Outlet, RequestItem, ItemStatus } from '@/types';
 import { formatDateTime } from '@/lib/utils/format';
 import toast from 'react-hot-toast';
 
@@ -26,8 +27,8 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
   const [outletId, setOutletId] = useState('');
   const [requesterName, setRequesterName] = useState('');
   const [note, setNote] = useState('');
-  const [status, setStatus] = useState<string>('');
   const [purchaseStatus, setPurchaseStatus] = useState<string>('');
+  const [itemStatuses, setItemStatuses] = useState<Record<string, ItemStatus>>({});
 
   useEffect(() => {
     Promise.all([
@@ -40,8 +41,10 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
         setOutletId(data.outlet_id);
         setRequesterName(data.requester_name);
         setNote(data.note ?? '');
-        setStatus(data.status);
         setPurchaseStatus(data.purchase_status);
+        setItemStatuses(Object.fromEntries(
+          (data.request_items ?? []).map((i: RequestItem) => [i.id, i.status ?? 'pending'])
+        ));
       }
       setOutlets(outletsData.data ?? []);
       setLoading(false);
@@ -53,6 +56,11 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
       toast.error('Outlet dan Nama Pengaju wajib diisi.');
       return;
     }
+    // Only send items whose status actually changed
+    const changedItems = (request?.request_items ?? [])
+      .filter((i) => itemStatuses[i.id] && itemStatuses[i.id] !== (i.status ?? 'pending'))
+      .map((i) => ({ id: i.id, status: itemStatuses[i.id] }));
+
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/requests/${id}`, {
@@ -62,11 +70,17 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
           outlet_id: outletId,
           requester_name: requesterName.trim(),
           note: note.trim() || null,
-          status,
           purchase_status: purchaseStatus,
+          ...(changedItems.length > 0 && { items: changedItems }),
         }),
       });
       if (!res.ok) throw new Error();
+      const { data: updated } = await res.json();
+      setRequest((prev) => prev && {
+        ...prev,
+        status: updated?.status ?? prev.status,
+        request_items: prev.request_items?.map((i) => ({ ...i, status: itemStatuses[i.id] ?? i.status })),
+      });
       toast.success('Permintaan berhasil diperbarui.');
       router.refresh();
     } catch {
@@ -139,17 +153,13 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
             <h2 className="font-semibold text-gray-900 border-b border-gray-100 pb-2">Status</h2>
-            <Select
-              label="Status Permintaan"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              options={[
-                { value: 'pending', label: '🟡 Menunggu' },
-                { value: 'processing', label: '🔵 Diproses' },
-                { value: 'completed', label: '🟢 Selesai' },
-                { value: 'rejected', label: '🔴 Ditolak' },
-              ]}
-            />
+            <div>
+              <p className="block text-sm font-semibold text-gray-700 mb-1.5">Status Permintaan</p>
+              <StatusBadge status={request.status} />
+              <p className="text-xs text-gray-500 mt-1.5">
+                Otomatis menjadi Selesai setelah semua barang diberi status.
+              </p>
+            </div>
             <Select
               label="Status Pembelian"
               value={purchaseStatus}
@@ -175,12 +185,22 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                   <th className="py-2 text-gray-500 font-semibold text-right">Qty</th>
                   <th className="py-2 text-gray-500 font-semibold pl-4">Satuan</th>
                   <th className="py-2 text-gray-500 font-semibold text-center">Tipe</th>
+                  <th className="py-2 text-gray-500 font-semibold pl-4">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {request.request_items?.map((item) => (
                   <tr key={item.id} className="border-b border-gray-50 last:border-0">
-                    <td className="py-2.5 font-medium">{item.item_name}</td>
+                    <td className="py-2.5 font-medium">
+                      <div className="flex items-center gap-2.5">
+                        {item.photo_path && (
+                          <a href={getPhotoUrl(item.photo_path, 'request-condition-photos')} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-lg overflow-hidden border flex-shrink-0 hover:opacity-80 transition-opacity">
+                            <img src={getPhotoUrl(item.photo_path, 'request-condition-photos')} alt={`Foto ${item.item_name}`} className="w-full h-full object-cover" />
+                          </a>
+                        )}
+                        <span>{item.item_name}</span>
+                      </div>
+                    </td>
                     <td className="py-2.5 text-right">{item.qty}</td>
                     <td className="py-2.5 pl-4 text-gray-600">{item.unit}</td>
                     <td className="py-2.5 text-center">
@@ -189,6 +209,18 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                       ) : (
                         <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">Master</span>
                       )}
+                    </td>
+                    <td className="py-2.5 pl-4">
+                      <select
+                        aria-label={`Status ${item.item_name}`}
+                        value={itemStatuses[item.id] ?? 'pending'}
+                        onChange={(e) => setItemStatuses((prev) => ({ ...prev, [item.id]: e.target.value as ItemStatus }))}
+                        className="px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="pending">🟡 Menunggu</option>
+                        <option value="completed">🟢 Selesai</option>
+                        <option value="rejected">🔴 Ditolak</option>
+                      </select>
                     </td>
                   </tr>
                 ))}
