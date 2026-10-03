@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { generateRequestCode } from '@/lib/utils/request-code';
+import { sanitizeSearch, mediaFilterSelect, applyMediaFilters } from '@/lib/utils/request-query';
+import { logRequestEvent } from '@/lib/utils/request-log';
 import type { ItemFormData } from '@/types';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_CODE_ATTEMPTS = 5;
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,22 +42,31 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createServerClient();
 
-    // Generate unique request code
-    const request_code = await generateRequestCode();
-
-    // Insert request
-    const { data: request, error: reqError } = await supabase
-      .from('requests')
-      .insert({
-        request_code,
-        outlet_id,
-        requester_name: requester_name.trim(),
-        note: note?.trim() || null,
-        status: 'pending',
-        purchase_status: 'not_purchased',
-      })
-      .select('id, request_code, edit_token')
-      .single();
+    // Insert request. The code is "last code today + 1", so two submits at the
+    // same moment can pick the same code; on a unique violation (23505) we
+    // regenerate and retry instead of failing the user's request.
+    let request: { id: string; request_code: string; edit_token: string } | null = null;
+    let reqError: { code?: string; message?: string } | null = null;
+    for (let attempt = 1; attempt <= MAX_CODE_ATTEMPTS; attempt++) {
+      const request_code = await generateRequestCode();
+      const res = await supabase
+        .from('requests')
+        .insert({
+          request_code,
+          outlet_id,
+          requester_name: requester_name.trim(),
+          note: note?.trim() || null,
+          status: 'pending',
+          purchase_status: 'not_purchased',
+        })
+        .select('id, request_code, edit_token')
+        .single();
+      request = res.data;
+      reqError = res.error;
+      if (!reqError || reqError.code !== '23505') break;
+      // Small random backoff so concurrent submits don't collide again
+      await new Promise((r) => setTimeout(r, 50 + Math.random() * 150));
+    }
 
     if (reqError || !request) {
       console.error('Insert request error:', reqError);
@@ -88,6 +102,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    await logRequestEvent({
+      request_id: request.id,
+      request_code: request.request_code,
+      action: 'created',
+      actor: 'user',
+    });
+
     return NextResponse.json({
       data: {
         request_code: request.request_code,
@@ -110,7 +131,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createServerClient();
   const { searchParams } = new URL(req.url);
 
-  const search       = searchParams.get('search') ?? '';
+  const search       = sanitizeSearch(searchParams.get('search') ?? '');
   const outlet_id    = searchParams.get('outlet_id') ?? '';
   const status       = searchParams.get('status') ?? '';
   const purchaseSt   = searchParams.get('purchase_status') ?? '';
@@ -121,6 +142,8 @@ export async function GET(req: NextRequest) {
   const page         = parseInt(searchParams.get('page') ?? '1');
   const limit        = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100);
   const offset       = (page - 1) * limit;
+  // "Permintaan Saya": request ids remembered by this browser
+  const ids          = (searchParams.get('ids') ?? '').split(',').filter((v) => UUID_RE.test(v)).slice(0, 100);
 
   let query = supabase
     .from('requests')
@@ -130,8 +153,11 @@ export async function GET(req: NextRequest) {
       request_items(*),
       request_photos(id),
       purchase_receipts(id)
+      ${mediaFilterSelect(hasPhoto)}
     `, { count: 'exact' });
 
+  query = applyMediaFilters(query, hasReceipt, hasPhoto);
+  if (searchParams.has('ids')) query = query.in('id', ids.length > 0 ? ids : ['00000000-0000-0000-0000-000000000000']);
   if (outlet_id)  query = query.eq('outlet_id', outlet_id);
   if (status)     query = query.eq('status', status);
   if (purchaseSt) query = query.eq('purchase_status', purchaseSt);
@@ -153,15 +179,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Gagal memuat data.' }, { status: 500 });
   }
 
-  // Filter has_receipt and has_photo in memory (Supabase free doesn't support subquery count filter easily)
-  let filtered = data ?? [];
-  if (hasReceipt === 'yes') filtered = filtered.filter((r) => (r.purchase_receipts?.length ?? 0) > 0);
-  if (hasReceipt === 'no')  filtered = filtered.filter((r) => (r.purchase_receipts?.length ?? 0) === 0);
-  if (hasPhoto === 'yes')   filtered = filtered.filter((r) => (r.request_photos?.length ?? 0) > 0);
-  if (hasPhoto === 'no')    filtered = filtered.filter((r) => (r.request_photos?.length ?? 0) === 0);
-
-  // Strip edit_token from public response
-  const sanitized = filtered.map(({ edit_token: _et, ...rest }) => rest);
+  // Strip edit_token (secret) and the has_photo helper join from public response
+  const sanitized = ((data ?? []) as unknown as Record<string, unknown>[]).map(({ edit_token: _et, ph: _ph, ...rest }) => rest);
 
   return NextResponse.json({ data: sanitized, total: count ?? 0, page, limit });
 }

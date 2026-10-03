@@ -78,6 +78,68 @@ export default function AdminDashboardPage() {
             })}
           </div>
         )}
+
+        {!loading && stats?.recap && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <h2 className="font-semibold text-gray-900">Outlet Teraktif</h2>
+              <p className="text-xs text-gray-500 mb-3">{stats.recap.days} hari terakhir</p>
+              {stats.recap.top_outlets.length === 0 ? (
+                <p className="text-sm text-gray-400">Belum ada permintaan.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide">
+                      <th className="text-left py-2 font-semibold">Outlet</th>
+                      <th className="text-right py-2 font-semibold">Permintaan</th>
+                      <th className="text-right py-2 font-semibold">Barang</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.recap.top_outlets.map((o) => (
+                      <tr key={o.outlet_id} className="border-b border-gray-50 last:border-0">
+                        <td className="py-2">
+                          <Link href={`/admin/requests?outlet_id=${o.outlet_id}`} className="hover:text-primary-700">{o.name}</Link>
+                        </td>
+                        <td className="py-2 text-right font-semibold tabular-nums">{o.requests}</td>
+                        <td className="py-2 text-right text-gray-600 tabular-nums">{o.items}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <h2 className="font-semibold text-gray-900">Barang Paling Sering Diminta</h2>
+              <p className="text-xs text-gray-500 mb-3">{stats.recap.days} hari terakhir</p>
+              {stats.recap.top_items.length === 0 ? (
+                <p className="text-sm text-gray-400">Belum ada permintaan.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide">
+                      <th className="text-left py-2 font-semibold">Barang</th>
+                      <th className="text-right py-2 font-semibold">Diminta</th>
+                      <th className="text-right py-2 font-semibold">Total Qty</th>
+                      <th className="text-right py-2 font-semibold">Ditolak</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.recap.top_items.map((it) => (
+                      <tr key={`${it.name}|${it.unit}`} className="border-b border-gray-50 last:border-0">
+                        <td className="py-2">{it.name}</td>
+                        <td className="py-2 text-right font-semibold tabular-nums">{it.requests}×</td>
+                        <td className="py-2 text-right text-gray-600 tabular-nums">{it.qty} {it.unit}</td>
+                        <td className="py-2 text-right tabular-nums text-red-600">{it.rejected || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

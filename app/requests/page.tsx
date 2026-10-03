@@ -9,6 +9,27 @@ import { LoadingState, EmptyState } from '@/components/ui/States';
 import Button from '@/components/ui/Button';
 import type { Request, Outlet } from '@/types';
 import { formatDateShort, formatTime } from '@/lib/utils/format';
+import { cn } from '@/lib/utils/cn';
+
+const OUTLET_FILTER_KEY = 'requests_filter_outlet';
+
+// localStorage can throw (private mode, blocked storage): never break the page
+function readStorage<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw === null ? fallback : (JSON.parse(raw) as T);
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStorage(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
 
 export default function RequestsPage() {
   const [requests, setRequests] = useState<Request[]>([]);
@@ -23,11 +44,27 @@ export default function RequestsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPurchase, setFilterPurchase] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  // 'mine' = requests submitted from this browser (ids saved in request_tokens on submit)
+  const [tab, setTab] = useState<'all' | 'mine'>('all');
+  const [myIds, setMyIds] = useState<string[]>([]);
+  const [storageReady, setStorageReady] = useState(false);
+
+  // Restore remembered outlet filter + this browser's request ids
+  useEffect(() => {
+    const savedOutlet = readStorage<string>(OUTLET_FILTER_KEY, '');
+    const tokens = readStorage<Record<string, string>>('request_tokens', {});
+    setFilterOutlet(savedOutlet);
+    if (savedOutlet) setShowFilters(true);
+    setMyIds(Object.keys(tokens).slice(-100));
+    setStorageReady(true);
+  }, []);
 
   const fetchData = useCallback(async () => {
+    if (!storageReady) return;
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      if (tab === 'mine') params.set('ids', myIds.join(','));
       if (search) params.set('search', search);
       if (filterOutlet) params.set('outlet_id', filterOutlet);
       if (filterStatus) params.set('status', filterStatus);
@@ -44,7 +81,7 @@ export default function RequestsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterOutlet, filterStatus, filterPurchase, page]);
+  }, [search, filterOutlet, filterStatus, filterPurchase, page, tab, myIds, storageReady]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -68,6 +105,23 @@ export default function RequestsPage() {
           </Link>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-3 w-fit">
+          {([['all', 'Semua'], ['mine', 'Permintaan Saya']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => { setTab(key); setPage(1); }}
+              className={cn(
+                'px-4 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                tab === key ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Search + Filter Bar */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 mb-4 space-y-3">
           <div className="flex gap-2">
@@ -75,7 +129,7 @@ export default function RequestsPage() {
               <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
               <input
                 type="text"
-                placeholder="Cari kode, pengaju, atau barang..."
+                placeholder="Cari kode atau nama pengaju..."
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="flex-1 bg-transparent text-sm focus:outline-none text-gray-700 placeholder:text-gray-400"
@@ -102,7 +156,7 @@ export default function RequestsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-gray-100">
               <select
                 value={filterOutlet}
-                onChange={(e) => { setFilterOutlet(e.target.value); setPage(1); }}
+                onChange={(e) => { setFilterOutlet(e.target.value); writeStorage(OUTLET_FILTER_KEY, e.target.value); setPage(1); }}
                 className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
               >
                 <option value="">Semua Outlet</option>
@@ -137,8 +191,10 @@ export default function RequestsPage() {
         ) : requests.length === 0 ? (
           <EmptyState
             icon={<Package className="h-12 w-12" />}
-            title="Belum ada permintaan barang."
-            description="Buat permintaan baru untuk memulai."
+            title={tab === 'mine' ? 'Belum ada permintaan dari perangkat ini.' : 'Belum ada permintaan barang.'}
+            description={tab === 'mine'
+              ? 'Permintaan yang Anda kirim dari browser ini akan muncul di sini.'
+              : 'Buat permintaan baru untuk memulai.'}
             action={<Link href="/"><Button size="sm">Buat Permintaan</Button></Link>}
           />
         ) : (

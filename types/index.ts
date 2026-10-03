@@ -51,6 +51,7 @@ export interface RequestItem {
   is_manual: boolean;
   photo_path?: string | null;
   status?: ItemStatus; // undefined until migration_request_item_status.sql is applied
+  admin_note?: string | null; // undefined until migration_admin_notes_and_logs.sql is applied
   created_at: string;
 }
 
@@ -134,6 +135,27 @@ export interface DashboardStats {
   not_purchased: number;
   purchased: number;
   purchased_no_receipt: number;
+  recap?: DashboardRecap;
+}
+
+export interface DashboardRecap {
+  days: number;
+  top_outlets: { outlet_id: string; name: string; requests: number; items: number }[];
+  top_items: { name: string; unit: string; requests: number; qty: number; rejected: number }[];
+}
+
+// ============================================================
+// REQUEST LOGS (riwayat perubahan)
+// ============================================================
+
+export interface RequestLog {
+  id: string;
+  request_id: string | null;
+  request_code: string;
+  action: 'created' | 'updated' | 'deleted';
+  actor: 'user' | 'admin';
+  detail: { changes?: { field: string; label: string; from: string | null; to: string | null }[] };
+  created_at: string;
 }
 
 // ============================================================

@@ -3,14 +3,14 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Package, Trash2, Camera, Receipt, ExternalLink, Save } from 'lucide-react';
+import { ArrowLeft, Package, Trash2, Camera, Receipt, ExternalLink, Save, History } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { LoadingState } from '@/components/ui/States';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import type { Request, Outlet, RequestItem, ItemStatus } from '@/types';
+import type { Request, Outlet, RequestItem, ItemStatus, RequestLog } from '@/types';
 import { formatDateTime } from '@/lib/utils/format';
 import toast from 'react-hot-toast';
 
@@ -29,8 +29,18 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
   const [note, setNote] = useState('');
   const [purchaseStatus, setPurchaseStatus] = useState<string>('');
   const [itemStatuses, setItemStatuses] = useState<Record<string, ItemStatus>>({});
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  const [logs, setLogs] = useState<RequestLog[]>([]);
+
+  const fetchLogs = () => {
+    fetch(`/api/admin/requests/${id}/logs`)
+      .then((r) => (r.ok ? r.json() : { data: [] }))
+      .then((d) => setLogs(d.data ?? []))
+      .catch(() => setLogs([]));
+  };
 
   useEffect(() => {
+    fetchLogs();
     Promise.all([
       fetch(`/api/admin/requests/${id}`).then((r) => r.ok ? r.json() : { data: null }),
       fetch('/api/admin/outlets').then((r) => r.ok ? r.json() : { data: [] }),
@@ -45,6 +55,9 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
         setItemStatuses(Object.fromEntries(
           (data.request_items ?? []).map((i: RequestItem) => [i.id, i.status ?? 'pending'])
         ));
+        setItemNotes(Object.fromEntries(
+          (data.request_items ?? []).map((i: RequestItem) => [i.id, i.admin_note ?? ''])
+        ));
       }
       setOutlets(outletsData.data ?? []);
       setLoading(false);
@@ -56,10 +69,16 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
       toast.error('Outlet dan Nama Pengaju wajib diisi.');
       return;
     }
-    // Only send items whose status actually changed
+    // Only send item fields that actually changed
     const changedItems = (request?.request_items ?? [])
-      .filter((i) => itemStatuses[i.id] && itemStatuses[i.id] !== (i.status ?? 'pending'))
-      .map((i) => ({ id: i.id, status: itemStatuses[i.id] }));
+      .map((i) => {
+        const change: { id: string; status?: ItemStatus; admin_note?: string | null } = { id: i.id };
+        if (itemStatuses[i.id] && itemStatuses[i.id] !== (i.status ?? 'pending')) change.status = itemStatuses[i.id];
+        const noteVal = (itemNotes[i.id] ?? '').trim();
+        if (noteVal !== (i.admin_note ?? '')) change.admin_note = noteVal || null;
+        return change;
+      })
+      .filter((c) => 'status' in c || 'admin_note' in c);
 
     setSaving(true);
     try {
@@ -79,8 +98,13 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
       setRequest((prev) => prev && {
         ...prev,
         status: updated?.status ?? prev.status,
-        request_items: prev.request_items?.map((i) => ({ ...i, status: itemStatuses[i.id] ?? i.status })),
+        request_items: prev.request_items?.map((i) => ({
+          ...i,
+          status: itemStatuses[i.id] ?? i.status,
+          admin_note: (itemNotes[i.id] ?? '').trim() || null,
+        })),
       });
+      fetchLogs();
       toast.success('Permintaan berhasil diperbarui.');
       router.refresh();
     } catch {
@@ -205,9 +229,9 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                     <td className="py-2.5 pl-4 text-gray-600">{item.unit}</td>
                     <td className="py-2.5 text-center">
                       {item.is_manual ? (
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">Manual</span>
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full whitespace-nowrap">Petty Cash</span>
                       ) : (
-                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">Master</span>
+                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">Warehouse</span>
                       )}
                     </td>
                     <td className="py-2.5 pl-4">
@@ -221,6 +245,15 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                         <option value="completed">🟢 Selesai</option>
                         <option value="rejected">🔴 Ditolak</option>
                       </select>
+                      <input
+                        type="text"
+                        aria-label={`Catatan admin ${item.item_name}`}
+                        placeholder={itemStatuses[item.id] === 'rejected' ? 'Alasan ditolak...' : 'Catatan (opsional)'}
+                        maxLength={500}
+                        value={itemNotes[item.id] ?? ''}
+                        onChange={(e) => setItemNotes((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                        className="mt-1.5 w-full min-w-40 px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-gray-400"
+                      />
                     </td>
                   </tr>
                 ))}
@@ -262,6 +295,39 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
               </div>
             ) : <p className="text-sm text-gray-400">Tidak ada nota.</p>}
           </div>
+        </div>
+
+        {/* Riwayat Perubahan */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mt-6">
+          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <History className="h-4 w-4 text-gray-500" /> Riwayat Perubahan
+          </h2>
+          {logs.length === 0 ? (
+            <p className="text-sm text-gray-400">Belum ada riwayat.</p>
+          ) : (
+            <ol className="space-y-3">
+              {logs.map((log) => (
+                <li key={log.id} className="border-l-2 border-gray-200 pl-3">
+                  <p className="text-xs text-gray-500">
+                    {formatDateTime(log.created_at)} · {log.actor === 'admin' ? 'Admin' : 'Pengaju'}
+                  </p>
+                  {log.action === 'created' && <p className="text-sm text-gray-800">Permintaan dibuat</p>}
+                  {log.action === 'deleted' && <p className="text-sm text-gray-800">Permintaan dihapus</p>}
+                  {log.action === 'updated' && (
+                    <ul className="text-sm text-gray-800 space-y-0.5">
+                      {(log.detail?.changes ?? []).map((c, idx) => (
+                        <li key={idx}>
+                          <span className="font-medium">{c.label}:</span>{' '}
+                          <span className="text-gray-500 line-through">{c.from || '—'}</span>{' → '}
+                          <span>{c.to || '—'}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
       </div>
     </AdminLayout>

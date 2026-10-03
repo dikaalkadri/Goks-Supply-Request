@@ -144,6 +144,11 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                               Manual
                             </span>
                           )}
+                          {item.admin_note && (
+                            <p className={`text-xs mt-0.5 ${item.status === 'rejected' ? 'text-red-600' : 'text-gray-500'}`}>
+                              Catatan admin: {item.admin_note}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </td>

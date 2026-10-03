@@ -60,7 +60,21 @@ CREATE TABLE IF NOT EXISTS request_items (
   photo_path  TEXT,
   status      TEXT NOT NULL DEFAULT 'pending'
               CHECK (status IN ('pending','completed','rejected')),
+  admin_note  TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
+-- TABLE: request_logs (riwayat perubahan)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS request_logs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  request_id    UUID REFERENCES requests(id) ON DELETE SET NULL,
+  request_code  TEXT NOT NULL,
+  action        TEXT NOT NULL,
+  actor         TEXT NOT NULL,
+  detail        JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ============================================================
@@ -104,6 +118,7 @@ CREATE INDEX IF NOT EXISTS idx_request_items_request   ON request_items(request_
 CREATE INDEX IF NOT EXISTS idx_request_items_item      ON request_items(item_id);
 CREATE INDEX IF NOT EXISTS idx_request_photos_request  ON request_photos(request_id);
 CREATE INDEX IF NOT EXISTS idx_purchase_receipts_req   ON purchase_receipts(request_id);
+CREATE INDEX IF NOT EXISTS idx_request_logs_request   ON request_logs(request_id, created_at DESC);
 
 -- ============================================================
 -- UPDATED_AT TRIGGER

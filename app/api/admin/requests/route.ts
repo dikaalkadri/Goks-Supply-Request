@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { sanitizeSearch, mediaFilterSelect, applyMediaFilters } from '@/lib/utils/request-query';
+import { logRequestEvent } from '@/lib/utils/request-log';
 
 export async function GET(req: NextRequest) {
   const supabase = await createAdminClient();
   const { searchParams } = new URL(req.url);
 
-  const search       = searchParams.get('search') ?? '';
+  const search       = sanitizeSearch(searchParams.get('search') ?? '');
   const outlet_id    = searchParams.get('outlet_id') ?? '';
   const status       = searchParams.get('status') ?? '';
   const purchaseSt   = searchParams.get('purchase_status') ?? '';
@@ -25,8 +27,10 @@ export async function GET(req: NextRequest) {
       request_items(*),
       request_photos(id),
       purchase_receipts(id)
+      ${mediaFilterSelect(hasPhoto)}
     `, { count: 'exact' });
 
+  query = applyMediaFilters(query, hasReceipt, hasPhoto);
 
   if (outlet_id)  query = query.eq('outlet_id', outlet_id);
   if (status)     query = query.eq('status', status);
@@ -48,13 +52,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Gagal memuat data.' }, { status: 500 });
   }
 
-  let filtered = data ?? [];
-  if (hasReceipt === 'yes') filtered = filtered.filter((r) => (r.purchase_receipts?.length ?? 0) > 0);
-  if (hasReceipt === 'no')  filtered = filtered.filter((r) => (r.purchase_receipts?.length ?? 0) === 0);
-  if (hasPhoto === 'yes')   filtered = filtered.filter((r) => (r.request_photos?.length ?? 0) > 0);
-  if (hasPhoto === 'no')    filtered = filtered.filter((r) => (r.request_photos?.length ?? 0) === 0);
+  // `ph` is only the has_photo filter helper join
+  const rows = ((data ?? []) as unknown as Record<string, unknown>[]).map(({ ph: _ph, ...rest }) => rest);
 
-  return NextResponse.json({ data: filtered, total: count ?? 0, page, limit });
+  return NextResponse.json({ data: rows, total: count ?? 0, page, limit });
 }
 
 export async function DELETE(req: NextRequest) {
@@ -63,8 +64,13 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'ID diperlukan.' }, { status: 400 });
 
   const supabase = await createAdminClient();
+  const { data: existing } = await supabase.from('requests').select('request_code').eq('id', id).single();
   const { error } = await supabase.from('requests').delete().eq('id', id);
   if (error) return NextResponse.json({ error: 'Gagal menghapus permintaan.' }, { status: 500 });
+
+  if (existing) {
+    await logRequestEvent({ request_id: null, request_code: existing.request_code, action: 'deleted', actor: 'admin' });
+  }
 
   return NextResponse.json({ success: true });
 }

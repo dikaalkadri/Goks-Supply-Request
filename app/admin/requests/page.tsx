@@ -38,6 +38,17 @@ export default function AdminRequestsPage() {
     fetch('/api/admin/outlets').then((r) => r.json()).then((d) => setOutlets(d.data ?? []));
   }, []);
 
+  // Apply filters from the URL (links from dashboard cards, e.g. ?status=pending)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('outlet_id')) setFilterOutlet(q.get('outlet_id')!);
+    if (q.get('status')) setFilterStatus(q.get('status')!);
+    if (q.get('purchase_status')) setFilterPurchase(q.get('purchase_status')!);
+    if (q.get('has_receipt')) setFilterReceipt(q.get('has_receipt')!);
+    if (q.get('has_photo')) setFilterPhoto(q.get('has_photo')!);
+    if ([...q.keys()].length > 0) setShowFilters(true);
+  }, []);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -178,8 +189,8 @@ export default function AdminRequestsPage() {
               </select>
               <select value={filterPhoto} onChange={(e) => { setFilterPhoto(e.target.value); setPage(1); }} className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
                 <option value="">Semua Foto</option>
-                <option value="yes">Ada Foto Kondisi</option>
-                <option value="no">Tanpa Foto Kondisi</option>
+                <option value="yes">Ada Foto Barang</option>
+                <option value="no">Tanpa Foto Barang</option>
               </select>
               <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white" placeholder="Dari tanggal" />
               <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white" placeholder="Sampai tanggal" />
