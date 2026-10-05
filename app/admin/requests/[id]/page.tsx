@@ -30,6 +30,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
   const [purchaseStatus, setPurchaseStatus] = useState<string>('');
   const [itemStatuses, setItemStatuses] = useState<Record<string, ItemStatus>>({});
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  const [itemPurchaseTypes, setItemPurchaseTypes] = useState<Record<string, string>>({});
   const [logs, setLogs] = useState<RequestLog[]>([]);
 
   const fetchLogs = () => {
@@ -58,6 +59,9 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
         setItemNotes(Object.fromEntries(
           (data.request_items ?? []).map((i: RequestItem) => [i.id, i.admin_note ?? ''])
         ));
+        setItemPurchaseTypes(Object.fromEntries(
+          (data.request_items ?? []).map((i: RequestItem) => [i.id, i.purchase_type ?? ''])
+        ));
       }
       setOutlets(outletsData.data ?? []);
       setLoading(false);
@@ -72,13 +76,16 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
     // Only send item fields that actually changed
     const changedItems = (request?.request_items ?? [])
       .map((i) => {
-        const change: { id: string; status?: ItemStatus; admin_note?: string | null } = { id: i.id };
+        const change: { id: string; status?: ItemStatus; admin_note?: string | null; purchase_type?: string } = { id: i.id };
         if (itemStatuses[i.id] && itemStatuses[i.id] !== (i.status ?? 'pending')) change.status = itemStatuses[i.id];
         const noteVal = (itemNotes[i.id] ?? '').trim();
         if (noteVal !== (i.admin_note ?? '')) change.admin_note = noteVal || null;
+        if (itemPurchaseTypes[i.id] !== undefined && itemPurchaseTypes[i.id] !== (i.purchase_type ?? '')) {
+          change.purchase_type = itemPurchaseTypes[i.id] || null;
+        }
         return change;
       })
-      .filter((c) => 'status' in c || 'admin_note' in c);
+      .filter((c) => 'status' in c || 'admin_note' in c || 'purchase_type' in c);
 
     setSaving(true);
     try {
@@ -102,6 +109,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
           ...i,
           status: itemStatuses[i.id] ?? i.status,
           admin_note: (itemNotes[i.id] ?? '').trim() || null,
+          purchase_type: (itemPurchaseTypes[i.id] as any) ?? i.purchase_type,
         })),
       });
       fetchLogs();
@@ -208,7 +216,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                   <th className="py-2 text-gray-500 font-semibold">Nama Barang</th>
                   <th className="py-2 text-gray-500 font-semibold text-right">Qty</th>
                   <th className="py-2 text-gray-500 font-semibold pl-4">Satuan</th>
-                  <th className="py-2 text-gray-500 font-semibold text-center">Tipe</th>
+                  <th className="py-2 text-gray-500 font-semibold text-center">Pengiriman/Pembelian</th>
                   <th className="py-2 text-gray-500 font-semibold pl-4">Status</th>
                 </tr>
               </thead>
@@ -228,11 +236,16 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                     <td className="py-2.5 text-right">{item.qty}</td>
                     <td className="py-2.5 pl-4 text-gray-600">{item.unit}</td>
                     <td className="py-2.5 text-center">
-                      {item.is_manual ? (
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full whitespace-nowrap">Petty Cash</span>
-                      ) : (
-                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">Warehouse</span>
-                      )}
+                      <select
+                        aria-label={`Tipe Pembelian ${item.item_name}`}
+                        value={itemPurchaseTypes[item.id] ?? ''}
+                        onChange={(e) => setItemPurchaseTypes((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                        className="px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">⏳ Menunggu</option>
+                        <option value="warehouse">🏭 Warehouse</option>
+                        <option value="petty_cash">💵 Petty Cash</option>
+                      </select>
                     </td>
                     <td className="py-2.5 pl-4">
                       <select

@@ -54,14 +54,16 @@ export async function PATCH(
     if (field in body) updateData[field] = body[field];
   }
 
-  // Optional per-item changes: [{ id, status?, admin_note? }]
+  // Optional per-item changes: [{ id, status?, admin_note?, purchase_type? }]
   const itemChanges = Array.isArray(body.items)
-    ? (body.items as { id: string; status?: string; admin_note?: string | null }[])
+    ? (body.items as { id: string; status?: string; admin_note?: string | null; purchase_type?: string | null }[])
     : [];
   const validItemStatuses = ['pending', 'completed', 'rejected'];
+  const validPurchaseTypes = ['warehouse', 'petty_cash'];
   const invalidItem = itemChanges.some((i) =>
     !i?.id ||
     ('status' in i && !validItemStatuses.includes(i.status as string)) ||
+    ('purchase_type' in i && i.purchase_type !== null && !validPurchaseTypes.includes(i.purchase_type as string)) ||
     ('admin_note' in i && i.admin_note !== null && (typeof i.admin_note !== 'string' || i.admin_note.length > 500))
   );
   if (invalidItem) {
@@ -83,7 +85,7 @@ export async function PATCH(
     .eq('id', id)
     .single();
   const beforeItems = new Map(
-    ((before?.request_items ?? []) as { id: string; item_name: string; status?: string; admin_note?: string | null }[])
+    ((before?.request_items ?? []) as { id: string; item_name: string; status?: string; admin_note?: string | null; purchase_type?: string | null }[])
       .map((i) => [i.id, i])
   );
 
@@ -92,6 +94,7 @@ export async function PATCH(
     const patch: Record<string, unknown> = {};
     if ('status' in item) patch.status = item.status;
     if ('admin_note' in item) patch.admin_note = item.admin_note?.trim() || null;
+    if ('purchase_type' in item) patch.purchase_type = item.purchase_type || null;
     if (Object.keys(patch).length === 0) continue;
 
     const { error: itemErr } = await supabase
@@ -116,6 +119,13 @@ export async function PATCH(
       changes.push({
         field: 'item_note', label: `Catatan ${name}`,
         from: prev?.admin_note ?? null, to: patch.admin_note as string | null,
+      });
+    }
+    if ('purchase_type' in patch && (prev?.purchase_type ?? null) !== patch.purchase_type) {
+      const pLabel = (val: string | null) => val === 'warehouse' ? 'Warehouse' : val === 'petty_cash' ? 'Petty Cash' : '-';
+      changes.push({
+        field: 'item_purchase_type', label: `Tipe Pembelian ${name}`,
+        from: pLabel(prev?.purchase_type ?? null), to: pLabel(patch.purchase_type as string | null),
       });
     }
   }

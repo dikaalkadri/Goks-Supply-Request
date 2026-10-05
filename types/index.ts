@@ -5,6 +5,7 @@
 export type RequestStatus = 'pending' | 'processing' | 'completed' | 'rejected';
 export type PurchaseStatus = 'not_purchased' | 'purchased';
 export type ItemStatus = 'pending' | 'completed' | 'rejected';
+export type PurchaseType = 'warehouse' | 'petty_cash';
 
 export interface Outlet {
   id: string;
@@ -52,6 +53,7 @@ export interface RequestItem {
   photo_path?: string | null;
   status?: ItemStatus; // undefined until migration_request_item_status.sql is applied
   admin_note?: string | null; // undefined until migration_admin_notes_and_logs.sql is applied
+  purchase_type?: PurchaseType | null; // undefined until migration_request_item_purchase_type.sql is applied
   created_at: string;
 }
 
@@ -190,6 +192,7 @@ export interface ExportRow {
   Tipe: string;
   'Status Request': string;
   'Status Pembelian': string;
+  'Tipe Pembelian': string;
   'Ada Nota': string;
   Catatan: string;
 }

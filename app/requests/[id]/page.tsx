@@ -114,6 +114,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                   <th className="text-left py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Barang</th>
                   <th className="text-right py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Qty</th>
                   <th className="text-left py-2 pl-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Satuan</th>
+                  <th className="text-center py-2 pl-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Pengiriman/Pembelian</th>
                   <th className="text-right py-2 pl-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</th>
                 </tr>
               </thead>
@@ -154,6 +155,15 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     </td>
                     <td className="py-2.5 text-right font-semibold text-gray-900">{item.qty}</td>
                     <td className="py-2.5 pl-3 text-gray-500">{item.unit}</td>
+                    <td className="py-2.5 pl-3 text-center">
+                      {!item.purchase_type ? (
+                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full whitespace-nowrap">Menunggu</span>
+                      ) : item.purchase_type === 'petty_cash' ? (
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full whitespace-nowrap">Petty Cash</span>
+                      ) : (
+                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">Warehouse</span>
+                      )}
+                    </td>
                     <td className="py-2.5 pl-3 text-right whitespace-nowrap">
                       <StatusBadge status={item.status ?? 'pending'} />
                     </td>

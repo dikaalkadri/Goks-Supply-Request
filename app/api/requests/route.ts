@@ -80,12 +80,13 @@ export async function POST(req: NextRequest) {
     // which can come back empty under RLS) so the client can attach per-item photos.
     const itemsToInsert = items.map((item) => ({
       id: crypto.randomUUID(),
-      request_id: request.id,
+      request_id: request!.id,
       item_id: item.is_manual ? null : item.item_id,
       item_name: item.item_name.trim(),
       unit: item.unit.trim(),
       qty: Number(item.qty),
       is_manual: item.is_manual,
+      purchase_type: null,
     }));
 
     const { error: itemsError } = await supabase

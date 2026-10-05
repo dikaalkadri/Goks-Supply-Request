@@ -39,6 +39,12 @@ export async function GET(req: NextRequest) {
     const items = req.request_items ?? [];
     const hasReceipt = (req.purchase_receipts?.length ?? 0) > 0;
 
+    const purchaseTypeLabel = (pt: string | null) => {
+      if (pt === 'petty_cash') return 'Petty Cash';
+      if (pt === 'warehouse') return 'Warehouse';
+      return 'Menunggu';
+    };
+
     if (items.length === 0) {
       rows.push({
         'Kode Request': req.request_code,
@@ -51,6 +57,7 @@ export async function GET(req: NextRequest) {
         Tipe: '-',
         'Status Request': statusLabel(req.status),
         'Status Pembelian': purchaseStatusLabel(req.purchase_status),
+        'Tipe Pembelian': '-',
         'Ada Nota': hasReceipt ? 'Ya' : 'Tidak',
         Catatan: req.note ?? '',
       });
@@ -64,9 +71,10 @@ export async function GET(req: NextRequest) {
           Barang: item.item_name,
           Qty: item.qty,
           Satuan: item.unit,
-          Tipe: item.is_manual ? 'Petty Cash' : 'Warehouse',
+          Tipe: item.is_manual ? 'Manual' : 'Master Barang',
           'Status Request': statusLabel(req.status),
           'Status Pembelian': purchaseStatusLabel(req.purchase_status),
+          'Tipe Pembelian': purchaseTypeLabel(item.purchase_type ?? null),
           'Ada Nota': hasReceipt ? 'Ya' : 'Tidak',
           Catatan: req.note ?? '',
         });
