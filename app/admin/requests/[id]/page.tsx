@@ -81,7 +81,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
         const noteVal = (itemNotes[i.id] ?? '').trim();
         if (noteVal !== (i.admin_note ?? '')) change.admin_note = noteVal || null;
         if (itemPurchaseTypes[i.id] !== undefined && itemPurchaseTypes[i.id] !== (i.purchase_type ?? '')) {
-          change.purchase_type = itemPurchaseTypes[i.id] || null;
+          change.purchase_type = itemPurchaseTypes[i.id] || undefined;
         }
         return change;
       })

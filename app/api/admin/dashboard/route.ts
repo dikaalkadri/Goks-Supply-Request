@@ -41,19 +41,19 @@ export async function GET(req: NextRequest) {
   const purchases = purchaseRes.data ?? [];
 
   const purchasedNoReceipt = (noReceiptRes.data ?? []).filter(
-    (r) => (r.purchase_receipts as { id: string }[]).length === 0
+    (r: { purchase_receipts: { id: string }[] }) => r.purchase_receipts.length === 0
   ).length;
 
   return NextResponse.json({
     data: {
       total:                totalRes.count ?? 0,
       today:                todayRes.count ?? 0,
-      pending:              statuses.filter((r) => r.status === 'pending').length,
-      processing:           statuses.filter((r) => r.status === 'processing').length,
-      completed:            statuses.filter((r) => r.status === 'completed').length,
-      rejected:             statuses.filter((r) => r.status === 'rejected').length,
-      not_purchased:        purchases.filter((r) => r.purchase_status === 'not_purchased').length,
-      purchased:            purchases.filter((r) => r.purchase_status === 'purchased').length,
+      pending:              statuses.filter((r: { status: string }) => r.status === 'pending').length,
+      processing:           statuses.filter((r: { status: string }) => r.status === 'processing').length,
+      completed:            statuses.filter((r: { status: string }) => r.status === 'completed').length,
+      rejected:             statuses.filter((r: { status: string }) => r.status === 'rejected').length,
+      not_purchased:        purchases.filter((r: { purchase_status: string }) => r.purchase_status === 'not_purchased').length,
+      purchased:            purchases.filter((r: { purchase_status: string }) => r.purchase_status === 'purchased').length,
       purchased_no_receipt: purchasedNoReceipt,
       recap,
     },

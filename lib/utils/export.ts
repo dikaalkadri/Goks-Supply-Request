@@ -22,6 +22,7 @@ export function exportRequestsToExcel(requests: Request[]): void {
         Tipe: '-',
         'Status Request': statusLabel(req.status),
         'Status Pembelian': purchaseStatusLabel(req.purchase_status),
+        'Tipe Pembelian': '-',
         'Ada Nota': hasReceipt ? 'Ya' : 'Tidak',
         Catatan: req.note ?? '',
       });
@@ -38,6 +39,7 @@ export function exportRequestsToExcel(requests: Request[]): void {
           Tipe: item.is_manual ? 'Petty Cash' : 'Warehouse',
           'Status Request': statusLabel(req.status),
           'Status Pembelian': purchaseStatusLabel(req.purchase_status),
+          'Tipe Pembelian': item.purchase_type ?? '-',
           'Ada Nota': hasReceipt ? 'Ya' : 'Tidak',
           Catatan: req.note ?? '',
         });
