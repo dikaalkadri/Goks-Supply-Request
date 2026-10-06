@@ -155,9 +155,9 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
       )}
 
       <div className="grid grid-cols-2 gap-3 mt-auto pt-2">
-        {/* Foto Bukti */}
+        {/* Bukti Barang Rusak */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5">Foto Bukti Barang</label>
+          <label className="block text-xs font-semibold text-gray-700 mb-1.5">Bukti Barang Rusak</label>
           {item.photo_path ? (
             <div className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-square">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -206,7 +206,13 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
         {/* Nota Pembelian */}
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1.5">Nota Pembelian</label>
-          {isConfirmedWarehouse ? (
+          {/* Progress (null) = disable, Warehouse = tidak berlaku, Petty Cash = bisa upload */}
+          {resolvedCategory === null ? (
+            <div className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-amber-200 rounded-xl bg-amber-50/50 opacity-70">
+              <Receipt className="h-5 w-5 text-amber-300 mb-1" />
+              <span className="text-[10px] text-amber-500 font-medium text-center px-2">Menunggu keputusan</span>
+            </div>
+          ) : isConfirmedWarehouse ? (
             <div className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50 opacity-60">
               <Receipt className="h-5 w-5 text-gray-300 mb-1" />
               <span className="text-[10px] text-gray-400 font-medium text-center px-2">Tidak Berlaku</span>
