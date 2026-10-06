@@ -25,7 +25,7 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
 
   const hasEditToken = () => {
     try {
-      const stored = localStorage.getItem('goks_request_tokens');
+      const stored = localStorage.getItem('request_tokens');
       if (stored) {
         const tokens = JSON.parse(stored);
         return tokens[request.id];
