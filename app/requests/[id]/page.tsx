@@ -65,6 +65,7 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
         body: JSON.stringify({
           bucket,
           path: filePath,
+          token: editToken,
         }),
       });
 
