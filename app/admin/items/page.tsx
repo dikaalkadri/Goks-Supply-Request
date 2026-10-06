@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Package, Plus, Search, Edit } from 'lucide-react';
+import { Package, Plus, Search, Edit, Trash2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -15,11 +15,15 @@ export default function AdminItemsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  // Modal states
+  // Edit/add modal
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  
+
+  // Delete confirm modal
+  const [deleteTarget, setDeleteTarget] = useState<Item | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   // Form states
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
@@ -66,15 +70,15 @@ export default function AdminItemsPage() {
     try {
       const method = editId ? 'PATCH' : 'POST';
       const body = { id: editId, name, unit, category, is_active: isActive };
-      
+
       const res = await fetch('/api/admin/items', {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      
+
       if (!res.ok) throw new Error();
-      
+
       toast.success(editId ? 'Barang diperbarui.' : 'Barang ditambahkan.');
       setModalOpen(false);
       fetchItems();
@@ -85,8 +89,29 @@ export default function AdminItemsPage() {
     }
   };
 
-  const filtered = items.filter(i => 
-    i.name.toLowerCase().includes(search.toLowerCase()) || 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/admin/items', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: deleteTarget.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      toast.success('Barang berhasil dihapus.');
+      setDeleteTarget(null);
+      fetchItems();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menghapus barang.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const filtered = items.filter(i =>
+    i.name.toLowerCase().includes(search.toLowerCase()) ||
     (i.category?.toLowerCase() || '').includes(search.toLowerCase())
   );
 
@@ -105,16 +130,16 @@ export default function AdminItemsPage() {
           <div className="p-4 border-b border-gray-100">
             <div className="relative max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Cari barang atau kategori..." 
+              <input
+                type="text"
+                placeholder="Cari barang atau kategori..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white"
               />
             </div>
           </div>
-          
+
           {loading ? (
             <LoadingState />
           ) : (
@@ -146,9 +171,22 @@ export default function AdminItemsPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <button onClick={() => openModal(item)} className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
-                            <Edit className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => openModal(item)}
+                              className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(item)}
+                              className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Hapus"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -160,12 +198,13 @@ export default function AdminItemsPage() {
         </div>
       </div>
 
+      {/* Edit / Add Modal */}
       <Modal open={modalOpen} onClose={() => !saving && setModalOpen(false)} title={editId ? 'Edit Barang' : 'Tambah Barang'}>
         <form onSubmit={handleSave} className="space-y-4">
           <Input label="Nama Barang" required value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: Cup 22 oz" />
           <Input label="Satuan" required value={unit} onChange={e => setUnit(e.target.value)} placeholder="Contoh: box" />
           <Input label="Kategori" value={category} onChange={e => setCategory(e.target.value)} placeholder="Contoh: Packaging" />
-          
+
           {editId && (
             <div className="flex items-center gap-2 mt-4 p-3 bg-gray-50 rounded-xl">
               <input type="checkbox" id="active" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="w-4 h-4 text-primary-600 rounded" />
@@ -178,6 +217,23 @@ export default function AdminItemsPage() {
             <Button type="submit" variant="primary" fullWidth loading={saving}>Simpan</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirm Modal */}
+      <Modal open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} title="Hapus Barang">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Yakin ingin menghapus barang <span className="font-semibold text-gray-900">&ldquo;{deleteTarget?.name}&rdquo;</span>?
+            <br />
+            <span className="text-red-500 text-xs mt-1 block">Tindakan ini tidak dapat dibatalkan.</span>
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="secondary" fullWidth onClick={() => setDeleteTarget(null)} disabled={deleting}>Batal</Button>
+            <Button type="button" variant="danger" fullWidth loading={deleting} onClick={handleDelete}>
+              <Trash2 className="h-4 w-4" /> Hapus
+            </Button>
+          </div>
+        </div>
       </Modal>
     </AdminLayout>
   );

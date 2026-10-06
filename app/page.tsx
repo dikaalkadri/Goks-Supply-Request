@@ -423,8 +423,8 @@ export default function HomePage() {
                   <Plus className="h-4 w-4" />
                   Tambah Barang
                 </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={addManualItem}>
-                  <Package className="h-4 w-4" />
+                <Button type="button" variant="outline" size="sm" onClick={addManualItem}>
+                  <Plus className="h-4 w-4" />
                   Barang Lainnya
                 </Button>
               </div>

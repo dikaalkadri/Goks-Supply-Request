@@ -53,3 +53,24 @@ export async function PATCH(req: NextRequest) {
   if (error) return NextResponse.json({ error: 'Gagal memperbarui barang.' }, { status: 500 });
   return NextResponse.json({ data });
 }
+
+export async function DELETE(req: NextRequest) {
+  const { id } = await req.json() as { id: string };
+  if (!id) return NextResponse.json({ error: 'ID diperlukan.' }, { status: 400 });
+
+  const supabase = await createAdminClient();
+  const { error } = await supabase.from('items').delete().eq('id', id);
+
+  if (error) {
+    // FK violation – item is referenced in request_items
+    if (error.code === '23503') {
+      return NextResponse.json(
+        { error: 'Barang tidak dapat dihapus karena sudah digunakan dalam permintaan.' },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: 'Gagal menghapus barang.' }, { status: 500 });
+  }
+  return NextResponse.json({ success: true });
+}
+

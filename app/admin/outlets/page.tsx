@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Edit } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -14,11 +14,15 @@ export default function AdminOutletsPage() {
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal states
+  // Edit/add modal
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  
+
+  // Delete confirm modal
+  const [deleteTarget, setDeleteTarget] = useState<Outlet | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   // Form states
   const [name, setName] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -59,25 +63,46 @@ export default function AdminOutletsPage() {
     try {
       const method = editId ? 'PATCH' : 'POST';
       const body = { id: editId, name, is_active: isActive };
-      
+
       const res = await fetch('/api/admin/outlets', {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      
+
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Terjadi kesalahan.');
       }
-      
+
       toast.success(editId ? 'Outlet diperbarui.' : 'Outlet ditambahkan.');
       setModalOpen(false);
       fetchOutlets();
-    } catch (err: any) {
-      toast.error(err.message || 'Gagal menyimpan outlet.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan outlet.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/admin/outlets', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: deleteTarget.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      toast.success('Outlet berhasil dihapus.');
+      setDeleteTarget(null);
+      fetchOutlets();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menghapus outlet.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -107,7 +132,7 @@ export default function AdminOutletsPage() {
                 </thead>
                 <tbody>
                   {outlets.length === 0 ? (
-                    <tr><td colSpan={4} className="p-8 text-center text-gray-500">Data tidak ditemukan.</td></tr>
+                    <tr><td colSpan={3} className="p-8 text-center text-gray-500">Data tidak ditemukan.</td></tr>
                   ) : (
                     outlets.map(outlet => (
                       <tr key={outlet.id} className="border-b border-gray-50 hover:bg-gray-50/50">
@@ -120,9 +145,22 @@ export default function AdminOutletsPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <button onClick={() => openModal(outlet)} className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
-                            <Edit className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => openModal(outlet)}
+                              className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(outlet)}
+                              className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Hapus"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -134,10 +172,11 @@ export default function AdminOutletsPage() {
         </div>
       </div>
 
+      {/* Edit / Add Modal */}
       <Modal open={modalOpen} onClose={() => !saving && setModalOpen(false)} title={editId ? 'Edit Outlet' : 'Tambah Outlet'}>
         <form onSubmit={handleSave} className="space-y-4">
           <Input label="Nama Outlet" required value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: 01. TAPLAU" />
-          
+
           {editId && (
             <div className="flex items-center gap-2 mt-4 p-3 bg-gray-50 rounded-xl">
               <input type="checkbox" id="active" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="w-4 h-4 text-primary-600 rounded" />
@@ -150,6 +189,23 @@ export default function AdminOutletsPage() {
             <Button type="submit" variant="primary" fullWidth loading={saving}>Simpan</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirm Modal */}
+      <Modal open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} title="Hapus Outlet">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Yakin ingin menghapus outlet <span className="font-semibold text-gray-900">&ldquo;{deleteTarget?.name}&rdquo;</span>?
+            <br />
+            <span className="text-red-500 text-xs mt-1 block">Tindakan ini tidak dapat dibatalkan.</span>
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="secondary" fullWidth onClick={() => setDeleteTarget(null)} disabled={deleting}>Batal</Button>
+            <Button type="button" variant="danger" fullWidth loading={deleting} onClick={handleDelete}>
+              <Trash2 className="h-4 w-4" /> Hapus
+            </Button>
+          </div>
+        </div>
       </Modal>
     </AdminLayout>
   );

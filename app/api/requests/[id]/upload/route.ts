@@ -10,11 +10,11 @@ export async function POST(
   const { storage_path, edit_token, type, request_item_id } = body as {
     storage_path: string;
     edit_token: string;
-    type: 'photo' | 'receipt' | 'item_photo';
+    type: 'photo' | 'receipt' | 'item_photo' | 'item_receipt';
     request_item_id?: string;
   };
 
-  if (!storage_path || !edit_token || !type || (type === 'item_photo' && !request_item_id)) {
+  if (!storage_path || !edit_token || !type || ((type === 'item_photo' || type === 'item_receipt') && !request_item_id)) {
     return NextResponse.json({ error: 'Data tidak lengkap.' }, { status: 400 });
   }
 
@@ -34,17 +34,18 @@ export async function POST(
     return NextResponse.json({ error: 'Anda tidak memiliki akses.' }, { status: 403 });
   }
 
-  if (type === 'item_photo') {
-    // One optional photo per request item; the item must belong to this request
+  if (type === 'item_photo' || type === 'item_receipt') {
+    // Update either photo_path or receipt_path on the request_item
+    const updatePayload = type === 'item_photo' ? { photo_path: storage_path } : { receipt_path: storage_path };
     const { data: updated, error } = await supabase
       .from('request_items')
-      .update({ photo_path: storage_path })
+      .update(updatePayload)
       .eq('id', request_item_id)
       .eq('request_id', id)
       .select('id');
 
     if (error) {
-      return NextResponse.json({ error: 'Gagal menyimpan foto barang.' }, { status: 500 });
+      return NextResponse.json({ error: 'Gagal menyimpan foto.' }, { status: 500 });
     }
     if (!updated || updated.length === 0) {
       return NextResponse.json({ error: 'Barang tidak ditemukan.' }, { status: 404 });

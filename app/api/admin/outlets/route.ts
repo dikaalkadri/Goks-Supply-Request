@@ -41,3 +41,24 @@ export async function PATCH(req: NextRequest) {
   if (error) return NextResponse.json({ error: 'Gagal memperbarui outlet.' }, { status: 500 });
   return NextResponse.json({ data });
 }
+
+export async function DELETE(req: NextRequest) {
+  const { id } = await req.json() as { id: string };
+  if (!id) return NextResponse.json({ error: 'ID diperlukan.' }, { status: 400 });
+
+  const supabase = await createAdminClient();
+  const { error } = await supabase.from('outlets').delete().eq('id', id);
+
+  if (error) {
+    // FK violation – outlet still has requests
+    if (error.code === '23503') {
+      return NextResponse.json(
+        { error: 'Outlet tidak dapat dihapus karena masih memiliki permintaan terkait.' },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: 'Gagal menghapus outlet.' }, { status: 500 });
+  }
+  return NextResponse.json({ success: true });
+}
+
