@@ -105,12 +105,15 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
     }
   };
 
-  const isWarehouse = item.purchase_type === 'warehouse' || (item.purchase_type == null && !item.is_manual);
-  // Default to Petty Cash logic if manual, but backend sets purchase_type appropriately. 
-  // We'll use purchase_type if available.
-  const resolvedCategory = item.purchase_type 
-    ? (item.purchase_type === 'warehouse' ? 'Warehouse' : 'Petty Cash')
-    : (item.is_manual ? 'Petty Cash' : 'Warehouse');
+  // null = masih Progress (belum ditentukan admin), 'warehouse' / 'petty_cash' = sudah dikonfirmasi
+  const isConfirmedWarehouse = item.purchase_type === 'warehouse';
+  const resolvedCategory = item.purchase_type === 'warehouse'
+    ? 'Warehouse'
+    : item.purchase_type === 'petty_cash'
+    ? 'Petty Cash'
+    : null; // null → Progress (belum ditentukan)
+  // Rekomendasi awal berdasarkan sumber barang (hanya info, bukan keputusan final)
+  const recommendedCategory = item.is_manual ? 'Petty Cash' : 'Warehouse';
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 relative flex flex-col h-full">
@@ -131,9 +134,18 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
 
       <div className="text-xs text-gray-500 mb-3 border-b border-gray-50 pb-3">
         <span className="font-semibold text-gray-700 mr-1">Kategori Pembelian:</span>
-        <span className={`px-1.5 py-0.5 rounded-md ${resolvedCategory === 'Petty Cash' ? 'bg-orange-50 text-orange-700' : 'bg-primary-50 text-primary-700'}`}>
-          {resolvedCategory}
-        </span>
+        {resolvedCategory ? (
+          <span className={`px-1.5 py-0.5 rounded-md font-medium ${
+            resolvedCategory === 'Petty Cash' ? 'bg-orange-50 text-orange-700' : 'bg-primary-50 text-primary-700'
+          }`}>
+            {resolvedCategory}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1">
+            <span className="px-1.5 py-0.5 rounded-md font-medium bg-gray-100 text-gray-500">⏳ Progress</span>
+            <span className="text-gray-400">(rekomendasi: {recommendedCategory})</span>
+          </span>
+        )}
       </div>
 
       {item.admin_note && (
@@ -194,7 +206,7 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
         {/* Nota Pembelian */}
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1.5">Nota Pembelian</label>
-          {resolvedCategory === 'Warehouse' ? (
+          {isConfirmedWarehouse ? (
             <div className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50 opacity-60">
               <Receipt className="h-5 w-5 text-gray-300 mb-1" />
               <span className="text-[10px] text-gray-400 font-medium text-center px-2">Tidak Berlaku</span>

@@ -236,16 +236,27 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                     <td className="py-2.5 text-right">{item.qty}</td>
                     <td className="py-2.5 pl-4 text-gray-600">{item.unit}</td>
                     <td className="py-2.5 text-center">
-                      <select
-                        aria-label={`Tipe Pembelian ${item.item_name}`}
-                        value={itemPurchaseTypes[item.id] ?? ''}
-                        onChange={(e) => setItemPurchaseTypes((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                        className="px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      >
-                        <option value="">⏳ Menunggu</option>
-                        <option value="warehouse">🏭 Warehouse</option>
-                        <option value="petty_cash">💵 Petty Cash</option>
-                      </select>
+                      <div className="flex flex-col items-center gap-1">
+                        <select
+                          aria-label={`Tipe Pembelian ${item.item_name}`}
+                          value={itemPurchaseTypes[item.id] ?? ''}
+                          onChange={(e) => setItemPurchaseTypes((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                          className={`px-2 py-1.5 rounded-lg border text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                            !itemPurchaseTypes[item.id]
+                              ? 'border-amber-300 text-amber-700 bg-amber-50'
+                              : 'border-gray-200'
+                          }`}
+                        >
+                          <option value="">⏳ Progress</option>
+                          <option value="warehouse">🏭 Warehouse</option>
+                          <option value="petty_cash">💵 Petty Cash</option>
+                        </select>
+                        {!itemPurchaseTypes[item.id] && (
+                          <span className="text-[10px] text-gray-400">
+                            Rekomen: {item.is_manual ? 'Petty Cash' : 'Warehouse'}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-2.5 pl-4">
                       <select
