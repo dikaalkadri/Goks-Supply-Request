@@ -155,111 +155,78 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 mt-auto pt-2">
+      <div className="flex flex-row gap-4 mt-auto pt-3 border-t border-gray-50">
         {/* Bukti Barang Rusak */}
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5">Bukti Barang Rusak</label>
+        <div className="flex flex-col gap-1.5 flex-1">
+          <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Bukti Rusak</label>
           {item.photo_path ? (
-            <div className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-square">
+            <div className="relative group rounded-lg overflow-hidden border border-gray-200 w-16 h-16 flex-shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={getPhotoUrl(item.photo_path, 'request-condition-photos')}
-                alt="Foto Bukti"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                <a 
-                  href={getPhotoUrl(item.photo_path, 'request-condition-photos')} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-white backdrop-blur-sm transition-colors"
-                  title="Lihat Foto"
-                >
-                  <ExternalLink className="h-4 w-4" />
+              <img src={getPhotoUrl(item.photo_path, 'request-condition-photos')} alt="Foto Bukti" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                <a href={getPhotoUrl(item.photo_path, 'request-condition-photos')} target="_blank" rel="noopener noreferrer" className="p-1 bg-white/20 hover:bg-white/40 rounded-full text-white" title="Lihat Foto">
+                  <ExternalLink className="h-3 w-3" />
                 </a>
-                <label className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-white backdrop-blur-sm transition-colors cursor-pointer" title="Upload Ulang">
-                  <Camera className="h-4 w-4" />
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={(e) => handleUpload(e, 'photo')} 
-                    disabled={uploadingType !== null}
-                  />
+                <label className="p-1 bg-white/20 hover:bg-white/40 rounded-full text-white cursor-pointer" title="Upload Ulang">
+                  <Camera className="h-3 w-3" />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'photo')} disabled={uploadingType !== null} />
                 </label>
               </div>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 hover:border-primary-300 transition-colors cursor-pointer relative">
-              {uploadingType === 'photo' ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-500 border-t-transparent" />
-              ) : (
-                <>
-                  <Camera className="h-5 w-5 text-gray-400 mb-1" />
-                  <span className="text-[10px] text-gray-500 font-medium">Upload Foto</span>
-                </>
-              )}
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'photo')} disabled={uploadingType !== null} />
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 hover:border-primary-300 transition-colors cursor-pointer text-gray-500 w-fit">
+                {uploadingType === 'photo' ? (
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary-500 border-t-transparent" />
+                ) : (
+                  <Camera className="h-3.5 w-3.5" />
+                )}
+                <span className="text-[10px] font-medium">Upload Foto</span>
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'photo')} disabled={uploadingType !== null} />
+              </label>
+            </div>
           )}
         </div>
 
         {/* Nota Pembelian */}
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5">Nota Pembelian</label>
-          {/* Progress (null) = disable, Warehouse = tidak berlaku, Petty Cash = bisa upload */}
+        <div className="flex flex-col gap-1.5 flex-1">
+          <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Nota Pembelian</label>
           {resolvedCategory === null ? (
-            <div className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-amber-200 rounded-xl bg-amber-50/50 opacity-70">
-              <Receipt className="h-5 w-5 text-amber-300 mb-1" />
-              <span className="text-[10px] text-amber-500 font-medium text-center px-2">Menunggu keputusan</span>
+            <div className="flex items-center gap-1.5 py-1 text-amber-500 opacity-80">
+              <Receipt className="h-4 w-4" />
+              <span className="text-[10px] font-medium leading-tight">Menunggu<br/>keputusan</span>
             </div>
           ) : isConfirmedWarehouse ? (
-            <div className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50 opacity-60">
-              <Receipt className="h-5 w-5 text-gray-300 mb-1" />
-              <span className="text-[10px] text-gray-400 font-medium text-center px-2">Tidak Berlaku</span>
+            <div className="flex items-center gap-1.5 py-1 text-gray-400 opacity-80">
+              <Receipt className="h-4 w-4" />
+              <span className="text-[10px] font-medium leading-tight">Tidak<br/>Berlaku</span>
             </div>
           ) : item.receipt_path ? (
-            <div className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-square">
+            <div className="relative group rounded-lg overflow-hidden border border-gray-200 w-16 h-16 flex-shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={getPhotoUrl(item.receipt_path, 'request-receipts')}
-                alt="Nota Pembelian"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                <a 
-                  href={getPhotoUrl(item.receipt_path, 'request-receipts')} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-white backdrop-blur-sm transition-colors"
-                  title="Lihat Nota"
-                >
-                  <ExternalLink className="h-4 w-4" />
+              <img src={getPhotoUrl(item.receipt_path, 'request-receipts')} alt="Nota Pembelian" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                <a href={getPhotoUrl(item.receipt_path, 'request-receipts')} target="_blank" rel="noopener noreferrer" className="p-1 bg-white/20 hover:bg-white/40 rounded-full text-white" title="Lihat Nota">
+                  <ExternalLink className="h-3 w-3" />
                 </a>
-                <label className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-white backdrop-blur-sm transition-colors cursor-pointer" title="Upload Ulang">
-                  <UploadCloud className="h-4 w-4" />
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={(e) => handleUpload(e, 'receipt')} 
-                    disabled={uploadingType !== null}
-                  />
+                <label className="p-1 bg-white/20 hover:bg-white/40 rounded-full text-white cursor-pointer" title="Upload Ulang">
+                  <UploadCloud className="h-3 w-3" />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'receipt')} disabled={uploadingType !== null} />
                 </label>
               </div>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 hover:border-orange-300 transition-colors cursor-pointer relative text-orange-600">
-              {uploadingType === 'receipt' ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-orange-500 border-t-transparent" />
-              ) : (
-                <>
-                  <Receipt className="h-5 w-5 opacity-70 mb-1" />
-                  <span className="text-[10px] font-medium opacity-80">Upload Nota</span>
-                </>
-              )}
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'receipt')} disabled={uploadingType !== null} />
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 hover:border-orange-300 transition-colors cursor-pointer text-orange-600 w-fit">
+                {uploadingType === 'receipt' ? (
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-orange-500 border-t-transparent" />
+                ) : (
+                  <Receipt className="h-3.5 w-3.5" />
+                )}
+                <span className="text-[10px] font-medium">Upload Nota</span>
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'receipt')} disabled={uploadingType !== null} />
+              </label>
+            </div>
           )}
         </div>
       </div>
