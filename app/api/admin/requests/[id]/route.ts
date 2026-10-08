@@ -119,7 +119,6 @@ export async function PATCH(
       return NextResponse.json({ error: 'Gagal memperbarui barang.' }, { status: 500 });
     }
 
-    const prev = beforeItems.get(item.id);
     const name = prev?.item_name ?? 'Barang';
     if ('status' in patch && (prev?.status ?? 'pending') !== patch.status) {
       changes.push({
