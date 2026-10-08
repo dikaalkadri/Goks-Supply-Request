@@ -97,6 +97,18 @@ export async function PATCH(
     if ('purchase_type' in item) patch.purchase_type = item.purchase_type || null;
     if (Object.keys(patch).length === 0) continue;
 
+    const prev = beforeItems.get(item.id) as any;
+    const resolvedPurchaseType = patch.purchase_type ?? prev?.purchase_type;
+
+    if (
+      'status' in patch && 
+      patch.status === 'completed' && 
+      resolvedPurchaseType === 'warehouse' && 
+      !prev?.delivered_at
+    ) {
+      patch.delivered_at = new Date().toISOString();
+    }
+
     const { error: itemErr } = await supabase
       .from('request_items')
       .update(patch)

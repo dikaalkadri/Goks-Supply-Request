@@ -55,6 +55,7 @@ export interface RequestItem {
   status?: ItemStatus; // undefined until migration_request_item_status.sql is applied
   admin_note?: string | null; // undefined until migration_admin_notes_and_logs.sql is applied
   purchase_type?: PurchaseType | null; // undefined until migration_request_item_purchase_type.sql is applied
+  delivered_at?: string | null;
   created_at: string;
 }
 

@@ -133,20 +133,33 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
         <StatusBadge status={item.status ?? 'pending'} />
       </div>
 
-      <div className="text-xs text-gray-500 mb-3 border-b border-gray-50 pb-3">
-        <span className="font-semibold text-gray-700 mr-1">Kategori Pembelian:</span>
-        {resolvedCategory ? (
-          <span className={`px-1.5 py-0.5 rounded-md font-medium ${
-            resolvedCategory === 'Petty Cash' ? 'bg-orange-50 text-orange-700' : 'bg-primary-50 text-primary-700'
-          }`}>
-            {resolvedCategory}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1">
-            <span className="px-1.5 py-0.5 rounded-md font-medium bg-gray-100 text-gray-500">⏳ Progress</span>
-            <span className="text-gray-400">(rekomendasi: {recommendedCategory})</span>
-          </span>
-        )}
+      <div className="text-xs text-gray-500 mb-3 border-b border-gray-50 pb-3 space-y-2">
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="font-semibold text-gray-700 mr-1">Kategori Pembelian:</span>
+          {resolvedCategory ? (
+            <span className={`px-1.5 py-0.5 rounded-md font-medium ${
+              resolvedCategory === 'Petty Cash' ? 'bg-orange-50 text-orange-700' : 'bg-primary-50 text-primary-700'
+            }`}>
+              {resolvedCategory}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <span className="px-1.5 py-0.5 rounded-md font-medium bg-gray-100 text-gray-500">⏳ Progress</span>
+              <span className="text-gray-400">(rekomendasi: {recommendedCategory})</span>
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="font-semibold text-gray-700 mr-1">Tgl Barang Terkirim:</span>
+          {item.delivered_at ? (
+            <span className="text-gray-900 font-medium">
+              {new Date(item.delivered_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })},{' '}
+              {new Date(item.delivered_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          ) : (
+            <span className="text-gray-500 italic">Belum terkirim</span>
+          )}
+        </div>
       </div>
 
       {item.admin_note && (

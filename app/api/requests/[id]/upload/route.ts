@@ -35,8 +35,21 @@ export async function POST(
   }
 
   if (type === 'item_photo' || type === 'item_receipt') {
-    // Update either photo_path or receipt_path on the request_item
-    const updatePayload = type === 'item_photo' ? { photo_path: storage_path } : { receipt_path: storage_path };
+    // For receipt upload, check if delivered_at is already set
+    let updatePayload: any = type === 'item_photo' ? { photo_path: storage_path } : { receipt_path: storage_path };
+
+    if (type === 'item_receipt') {
+      const { data: itemData, error: itemErr } = await supabase
+        .from('request_items')
+        .select('delivered_at')
+        .eq('id', request_item_id)
+        .single();
+      
+      if (!itemErr && itemData && !itemData.delivered_at) {
+        updatePayload.delivered_at = new Date().toISOString();
+      }
+    }
+
     const { data: updated, error } = await supabase
       .from('request_items')
       .update(updatePayload)
@@ -45,7 +58,7 @@ export async function POST(
       .select('id');
 
     if (error) {
-      return NextResponse.json({ error: 'Gagal menyimpan foto.' }, { status: 500 });
+      return NextResponse.json({ error: 'Gagal menyimpan file.' }, { status: 500 });
     }
     if (!updated || updated.length === 0) {
       return NextResponse.json({ error: 'Barang tidak ditemukan.' }, { status: 404 });
