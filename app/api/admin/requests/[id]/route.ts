@@ -54,9 +54,9 @@ export async function PATCH(
     if (field in body) updateData[field] = body[field];
   }
 
-  // Optional per-item changes: [{ id, status?, admin_note?, purchase_type? }]
+  // Optional per-item changes: [{ id, status?, admin_note?, purchase_type?, delivered_at? }]
   const itemChanges = Array.isArray(body.items)
-    ? (body.items as { id: string; status?: string; admin_note?: string | null; purchase_type?: string | null }[])
+    ? (body.items as { id: string; status?: string; admin_note?: string | null; purchase_type?: string | null; delivered_at?: string | null }[])
     : [];
   const validItemStatuses = ['pending', 'completed', 'rejected'];
   const validPurchaseTypes = ['warehouse', 'petty_cash'];
@@ -85,7 +85,7 @@ export async function PATCH(
     .eq('id', id)
     .single();
   const beforeItems = new Map(
-    ((before?.request_items ?? []) as { id: string; item_name: string; status?: string; admin_note?: string | null; purchase_type?: string | null }[])
+    ((before?.request_items ?? []) as { id: string; item_name: string; status?: string; admin_note?: string | null; purchase_type?: string | null; delivered_at?: string | null }[])
       .map((i) => [i.id, i])
   );
 
@@ -95,6 +95,7 @@ export async function PATCH(
     if ('status' in item) patch.status = item.status;
     if ('admin_note' in item) patch.admin_note = item.admin_note?.trim() || null;
     if ('purchase_type' in item) patch.purchase_type = item.purchase_type || null;
+    if ('delivered_at' in item) patch.delivered_at = item.delivered_at;
     if (Object.keys(patch).length === 0) continue;
 
     const prev = beforeItems.get(item.id) as any;
@@ -104,7 +105,8 @@ export async function PATCH(
       'status' in patch && 
       patch.status === 'completed' && 
       resolvedPurchaseType === 'warehouse' && 
-      !prev?.delivered_at
+      !prev?.delivered_at &&
+      !patch.delivered_at
     ) {
       patch.delivered_at = new Date().toISOString();
     }
@@ -137,6 +139,17 @@ export async function PATCH(
       changes.push({
         field: 'item_purchase_type', label: `Tipe Pembelian ${name}`,
         from: pLabel(prev?.purchase_type ?? null), to: pLabel(patch.purchase_type as string | null),
+      });
+    }
+    if ('delivered_at' in patch && (prev?.delivered_at ?? null) !== patch.delivered_at) {
+      const formatDA = (val: string | null) => {
+        if (!val) return '-';
+        const d = new Date(val);
+        return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      };
+      changes.push({
+        field: 'item_delivered_at', label: `Tgl Pengiriman ${name}`,
+        from: formatDA(prev?.delivered_at ?? null), to: formatDA(patch.delivered_at as string | null),
       });
     }
   }

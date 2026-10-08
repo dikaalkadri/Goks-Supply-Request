@@ -31,7 +31,16 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
   const [itemStatuses, setItemStatuses] = useState<Record<string, ItemStatus>>({});
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   const [itemPurchaseTypes, setItemPurchaseTypes] = useState<Record<string, string>>({});
+  const [itemDeliveredAts, setItemDeliveredAts] = useState<Record<string, string>>({});
   const [logs, setLogs] = useState<RequestLog[]>([]);
+
+  const toLocalISOString = (dateString: string | null | undefined) => {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
 
   const fetchLogs = () => {
     fetch(`/api/admin/requests/${id}/logs`)
@@ -62,6 +71,9 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
         setItemPurchaseTypes(Object.fromEntries(
           (data.request_items ?? []).map((i: RequestItem) => [i.id, i.purchase_type ?? ''])
         ));
+        setItemDeliveredAts(Object.fromEntries(
+          (data.request_items ?? []).map((i: RequestItem) => [i.id, toLocalISOString(i.delivered_at)])
+        ));
       }
       setOutlets(outletsData.data ?? []);
       setLoading(false);
@@ -76,16 +88,21 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
     // Only send item fields that actually changed
     const changedItems = (request?.request_items ?? [])
       .map((i) => {
-        const change: { id: string; status?: ItemStatus; admin_note?: string | null; purchase_type?: string } = { id: i.id };
+        const change: { id: string; status?: ItemStatus; admin_note?: string | null; purchase_type?: string; delivered_at?: string | null } = { id: i.id };
         if (itemStatuses[i.id] && itemStatuses[i.id] !== (i.status ?? 'pending')) change.status = itemStatuses[i.id];
         const noteVal = (itemNotes[i.id] ?? '').trim();
         if (noteVal !== (i.admin_note ?? '')) change.admin_note = noteVal || null;
         if (itemPurchaseTypes[i.id] !== undefined && itemPurchaseTypes[i.id] !== (i.purchase_type ?? '')) {
           change.purchase_type = itemPurchaseTypes[i.id] || undefined;
         }
+        const deliveredAtVal = itemDeliveredAts[i.id];
+        const oldDeliveredAt = toLocalISOString(i.delivered_at);
+        if (deliveredAtVal !== undefined && deliveredAtVal !== oldDeliveredAt) {
+          change.delivered_at = deliveredAtVal ? new Date(deliveredAtVal).toISOString() : null;
+        }
         return change;
       })
-      .filter((c) => 'status' in c || 'admin_note' in c || 'purchase_type' in c);
+      .filter((c) => 'status' in c || 'admin_note' in c || 'purchase_type' in c || 'delivered_at' in c);
 
     setSaving(true);
     try {
@@ -110,6 +127,9 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
           status: itemStatuses[i.id] ?? i.status,
           admin_note: (itemNotes[i.id] ?? '').trim() || null,
           purchase_type: (itemPurchaseTypes[i.id] as any) ?? i.purchase_type,
+          delivered_at: itemDeliveredAts[i.id] !== undefined 
+            ? (itemDeliveredAts[i.id] ? new Date(itemDeliveredAts[i.id]).toISOString() : null)
+            : i.delivered_at,
         })),
       });
       fetchLogs();
@@ -302,14 +322,13 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                       />
                     </td>
                     <td className="py-2.5 pl-4 whitespace-nowrap text-xs text-gray-700">
-                      {item.delivered_at ? (
-                        <span className="font-medium">
-                          {new Date(item.delivered_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}<br/>
-                          <span className="text-gray-500">{new Date(item.delivered_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 font-medium">-</span>
-                      )}
+                      <input
+                        type="datetime-local"
+                        aria-label={`Tgl Pengiriman ${item.item_name}`}
+                        value={itemDeliveredAts[item.id] || ''}
+                        onChange={(e) => setItemDeliveredAts((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                        className="px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
                     </td>
                   </tr>
                 ))}
