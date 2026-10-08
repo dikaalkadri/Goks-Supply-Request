@@ -352,7 +352,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             <Package className="h-5 w-5 text-gray-600" />
             Daftar Barang
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             {request.request_items?.map((item) => (
               <ItemCard key={item.id} item={item} request={request} onUpdate={fetchRequest} />
             ))}
