@@ -150,14 +150,14 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
           )}
         </div>
         <div className="flex flex-wrap items-center gap-1">
-          <span className="font-semibold text-gray-700 mr-1">Tgl Barang Terkirim:</span>
+          <span className="font-semibold text-gray-700 mr-1">Tanggal Pengiriman:</span>
           {item.delivered_at ? (
             <span className="text-gray-900 font-medium">
               {new Date(item.delivered_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })},{' '}
               {new Date(item.delivered_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
             </span>
           ) : (
-            <span className="text-gray-500 italic">Belum terkirim</span>
+            <span className="text-gray-500 font-medium">-</span>
           )}
         </div>
       </div>
