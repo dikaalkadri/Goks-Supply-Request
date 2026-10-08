@@ -216,8 +216,10 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                   <th className="py-2 text-gray-500 font-semibold">Nama Barang</th>
                   <th className="py-2 text-gray-500 font-semibold text-right">Qty</th>
                   <th className="py-2 text-gray-500 font-semibold pl-4">Satuan</th>
-                  <th className="py-2 text-gray-500 font-semibold text-center">Pengiriman/Pembelian</th>
+                  <th className="py-2 text-gray-500 font-semibold text-center pl-4">Pengiriman/Pembelian</th>
                   <th className="py-2 text-gray-500 font-semibold pl-4">Status</th>
+                  <th className="py-2 text-gray-500 font-semibold pl-4">Catatan</th>
+                  <th className="py-2 text-gray-500 font-semibold pl-4 whitespace-nowrap">Tgl Pengiriman</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,6 +271,8 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                         <option value="completed">🟢 Selesai</option>
                         <option value="rejected">🔴 Ditolak</option>
                       </select>
+                    </td>
+                    <td className="py-2.5 pl-4">
                       <input
                         type="text"
                         aria-label={`Catatan admin ${item.item_name}`}
@@ -276,8 +280,18 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                         maxLength={500}
                         value={itemNotes[item.id] ?? ''}
                         onChange={(e) => setItemNotes((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                        className="mt-1.5 w-full min-w-40 px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-gray-400"
+                        className="w-full min-w-36 px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-gray-400"
                       />
+                    </td>
+                    <td className="py-2.5 pl-4 whitespace-nowrap text-xs text-gray-700">
+                      {item.delivered_at ? (
+                        <span className="font-medium">
+                          {new Date(item.delivered_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}<br/>
+                          <span className="text-gray-500">{new Date(item.delivered_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 font-medium">-</span>
+                      )}
                     </td>
                   </tr>
                 ))}
