@@ -5,16 +5,17 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, FileText, Package, Building2,
-  Settings, LogOut, Menu, X, ShoppingCart
+  Settings, LogOut, Menu, X, ShoppingCart, BarChart2
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const navItems = [
-  { href: '/admin/dashboard', label: 'Dashboard',      icon: LayoutDashboard },
-  { href: '/admin/requests',  label: 'Permintaan',     icon: FileText },
-  { href: '/admin/items',     label: 'Master Barang',  icon: Package },
-  { href: '/admin/outlets',   label: 'Outlet',         icon: Building2 },
-  { href: '/admin/settings',  label: 'Pengaturan',     icon: Settings },
+  { href: '/admin/dashboard',    label: 'Dashboard',          icon: LayoutDashboard },
+  { href: '/admin/requests',     label: 'Permintaan',         icon: FileText },
+  { href: '/admin/distribution', label: 'Distribusi Barang',  icon: BarChart2 },
+  { href: '/admin/items',        label: 'Master Barang',      icon: Package },
+  { href: '/admin/outlets',      label: 'Outlet',             icon: Building2 },
+  { href: '/admin/settings',     label: 'Pengaturan',         icon: Settings },
 ];
 
 interface AdminLayoutProps {
