@@ -5,6 +5,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { LoadingState } from '@/components/ui/States';
 import type { DashboardStats } from '@/types';
 import Link from 'next/link';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 
 /* ─── Icons ──────────────────────────────────────────────────── */
 const IconClipboard = () => (
@@ -225,26 +226,11 @@ export default function AdminDashboardPage() {
 
           {/* Date filter */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
-              <span className="text-gray-400"><IconFilter /></span>
-              <span className="text-xs text-gray-500 font-medium hidden sm:inline">Filter:</span>
-              <input
-                id="date-from"
-                type="date"
-                value={fromInput}
-                max={toInput || today}
-                onChange={(e) => setFromInput(e.target.value)}
-                className="text-xs text-gray-700 bg-transparent outline-none w-32 cursor-pointer"
-              />
-              <span className="text-gray-300 text-xs">→</span>
-              <input
-                id="date-to"
-                type="date"
-                value={toInput}
-                min={fromInput || undefined}
-                max={today}
-                onChange={(e) => setToInput(e.target.value)}
-                className="text-xs text-gray-700 bg-transparent outline-none w-32 cursor-pointer"
+            <div className="w-64">
+              <DateRangePicker
+                dateFrom={fromInput}
+                dateTo={toInput}
+                onChange={(f, t) => { setFromInput(f); setToInput(t); }}
               />
             </div>
             <button
