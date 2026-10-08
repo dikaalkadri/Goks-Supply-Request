@@ -217,6 +217,8 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                   <th className="py-2 text-gray-500 font-semibold text-right">Qty</th>
                   <th className="py-2 text-gray-500 font-semibold pl-4">Satuan</th>
                   <th className="py-2 text-gray-500 font-semibold text-center pl-4">Pengiriman/Pembelian</th>
+                  <th className="py-2 text-gray-500 font-semibold pl-4 text-center">Foto Rusak</th>
+                  <th className="py-2 text-gray-500 font-semibold pl-4 text-center">Foto Nota</th>
                   <th className="py-2 text-gray-500 font-semibold pl-4">Status</th>
                   <th className="py-2 text-gray-500 font-semibold pl-4">Catatan</th>
                   <th className="py-2 text-gray-500 font-semibold pl-4 whitespace-nowrap">Tgl Pengiriman</th>
@@ -226,14 +228,10 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                 {request.request_items?.map((item) => (
                   <tr key={item.id} className="border-b border-gray-50 last:border-0">
                     <td className="py-2.5 font-medium">
-                      <div className="flex items-center gap-2.5">
-                        {item.photo_path && (
-                          <a href={getPhotoUrl(item.photo_path, 'request-condition-photos')} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-lg overflow-hidden border flex-shrink-0 hover:opacity-80 transition-opacity">
-                            <img src={getPhotoUrl(item.photo_path, 'request-condition-photos')} alt={`Foto ${item.item_name}`} className="w-full h-full object-cover" />
-                          </a>
-                        )}
-                        <span>{item.item_name}</span>
-                      </div>
+                      <span>{item.item_name}</span>
+                      {item.is_manual && (
+                        <span className="ml-1 text-[10px] bg-orange-100 text-orange-700 px-1 py-0.5 rounded-full font-bold uppercase">Manual</span>
+                      )}
                     </td>
                     <td className="py-2.5 text-right">{item.qty}</td>
                     <td className="py-2.5 pl-4 text-gray-600">{item.unit}</td>
@@ -259,6 +257,26 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                           </span>
                         )}
                       </div>
+                    </td>
+                    {/* Foto Rusak */}
+                    <td className="py-2.5 pl-4 text-center">
+                      {item.photo_path ? (
+                        <a href={getPhotoUrl(item.photo_path, 'request-condition-photos')} target="_blank" rel="noopener noreferrer" className="inline-block w-10 h-10 rounded-lg overflow-hidden border hover:opacity-80 transition-opacity">
+                          <img src={getPhotoUrl(item.photo_path, 'request-condition-photos')} alt="Foto Rusak" className="w-full h-full object-cover" />
+                        </a>
+                      ) : (
+                        <span className="text-gray-300 text-xs">-</span>
+                      )}
+                    </td>
+                    {/* Foto Nota */}
+                    <td className="py-2.5 pl-4 text-center">
+                      {item.receipt_path ? (
+                        <a href={getPhotoUrl(item.receipt_path, 'request-receipts')} target="_blank" rel="noopener noreferrer" className="inline-block w-10 h-10 rounded-lg overflow-hidden border hover:opacity-80 transition-opacity">
+                          <img src={getPhotoUrl(item.receipt_path, 'request-receipts')} alt="Foto Nota" className="w-full h-full object-cover" />
+                        </a>
+                      ) : (
+                        <span className="text-gray-300 text-xs">-</span>
+                      )}
                     </td>
                     <td className="py-2.5 pl-4">
                       <select

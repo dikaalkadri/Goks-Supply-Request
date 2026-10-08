@@ -41,12 +41,19 @@ export async function POST(
     if (type === 'item_receipt') {
       const { data: itemData, error: itemErr } = await supabase
         .from('request_items')
-        .select('delivered_at')
+        .select('delivered_at, purchase_type, status')
         .eq('id', request_item_id)
         .single();
       
-      if (!itemErr && itemData && !itemData.delivered_at) {
-        updatePayload.delivered_at = new Date().toISOString();
+      if (!itemErr && itemData) {
+        // Set delivered_at only on first upload
+        if (!itemData.delivered_at) {
+          updatePayload.delivered_at = new Date().toISOString();
+        }
+        // Auto-complete status for petty_cash on first nota upload
+        if (itemData.purchase_type === 'petty_cash' && itemData.status !== 'completed') {
+          updatePayload.status = 'completed';
+        }
       }
     }
 
