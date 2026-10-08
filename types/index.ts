@@ -196,5 +196,6 @@ export interface ExportRow {
   'Status Pembelian': string;
   'Tipe Pembelian': string;
   'Ada Nota': string;
+  'Nota Item': string;
   Catatan: string;
 }

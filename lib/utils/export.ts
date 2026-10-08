@@ -24,6 +24,7 @@ export function exportRequestsToExcel(requests: Request[]): void {
         'Status Pembelian': purchaseStatusLabel(req.purchase_status),
         'Tipe Pembelian': '-',
         'Ada Nota': hasReceipt ? 'Ya' : 'Tidak',
+        'Nota Item': '-',
         Catatan: req.note ?? '',
       });
     } else {
@@ -41,6 +42,9 @@ export function exportRequestsToExcel(requests: Request[]): void {
           'Status Pembelian': purchaseStatusLabel(req.purchase_status),
           'Tipe Pembelian': item.purchase_type ?? '-',
           'Ada Nota': hasReceipt ? 'Ya' : 'Tidak',
+          'Nota Item': item.receipt_path 
+            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/request-receipts/${item.receipt_path}` 
+            : '-',
           Catatan: req.note ?? '',
         });
       }
