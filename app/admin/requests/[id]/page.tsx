@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Package, Trash2, Camera, Receipt, ExternalLink, Save, History } from 'lucide-react';
+import { ArrowLeft, Package, Trash2, Save, History } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -318,40 +318,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
-        {/* Media */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Camera className="h-4 w-4 text-gray-500" /> Foto Kondisi
-            </h2>
-            {(request.request_photos?.length ?? 0) > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {request.request_photos?.map((p) => (
-                  <a key={p.id} href={getPhotoUrl(p.storage_path, 'request-condition-photos')} target="_blank" rel="noopener noreferrer" className="relative w-24 h-24 rounded-lg overflow-hidden border group">
-                    <img src={getPhotoUrl(p.storage_path, 'request-condition-photos')} alt="Foto" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><ExternalLink className="h-4 w-4 text-white"/></div>
-                  </a>
-                ))}
-              </div>
-            ) : <p className="text-sm text-gray-400">Tidak ada foto.</p>}
-          </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-gray-500" /> Nota Pembelian
-            </h2>
-            {(request.purchase_receipts?.length ?? 0) > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {request.purchase_receipts?.map((p) => (
-                  <a key={p.id} href={getPhotoUrl(p.storage_path, 'request-receipts')} target="_blank" rel="noopener noreferrer" className="relative w-24 h-24 rounded-lg overflow-hidden border group">
-                    <img src={getPhotoUrl(p.storage_path, 'request-receipts')} alt="Nota" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><ExternalLink className="h-4 w-4 text-white"/></div>
-                  </a>
-                ))}
-              </div>
-            ) : <p className="text-sm text-gray-400">Tidak ada nota.</p>}
-          </div>
-        </div>
 
         {/* Riwayat Perubahan */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mt-6">
