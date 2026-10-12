@@ -9,7 +9,6 @@ import toast from 'react-hot-toast';
 interface PhotoUploaderProps {
   requestId: string;
   requestCode: string;
-  editToken: string;
   type: 'photo' | 'receipt';
   existingCount?: number;
   onUploadSuccess?: (storagePath: string) => void;
@@ -19,7 +18,6 @@ interface PhotoUploaderProps {
 export default function PhotoUploader({
   requestId,
   requestCode,
-  editToken,
   type,
   existingCount = 0,
   onUploadSuccess,
@@ -63,7 +61,7 @@ export default function PhotoUploader({
         const signedRes = await fetch('/api/upload/signed-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bucket, path: storagePath, token: editToken }),
+          body: JSON.stringify({ bucket, path: storagePath, request_id: requestId }),
         });
 
         if (!signedRes.ok) {
@@ -87,7 +85,7 @@ export default function PhotoUploader({
         const saveRes = await fetch(`/api/requests/${requestId}/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ storage_path: storagePath, edit_token: editToken, type }),
+          body: JSON.stringify({ storage_path: storagePath, type }),
         });
 
         if (!saveRes.ok) {
@@ -113,7 +111,7 @@ export default function PhotoUploader({
         setUploading(false);
       }
     }
-  }, [requestId, requestCode, editToken, type, existingCount, previews.length, remaining, onUploadSuccess]);
+  }, [requestId, requestCode, type, existingCount, previews.length, remaining, onUploadSuccess]);
 
   return (
     <div className="space-y-3">

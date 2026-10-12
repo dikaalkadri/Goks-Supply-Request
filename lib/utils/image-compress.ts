@@ -1,13 +1,20 @@
 /**
  * Client-side image compression using Canvas API + browser-image-compression
- * Target: max 1280px for condition photos, max 1600px for receipts
+ *
+ * Targets (post-compression):
+ *   - Condition photos : max 0.5 MB, max 1024px
+ *   - Receipts         : max 0.8 MB, max 1280px
+ *
+ * All images are converted to WebP for maximum byte savings.
  */
 import imageCompression from 'browser-image-compression';
 
 export async function compressConditionPhoto(file: File): Promise<File> {
   return imageCompression(file, {
-    maxSizeMB: 2,
-    maxWidthOrHeight: 1280,
+    maxSizeMB: 0.5,
+    maxWidthOrHeight: 1024,
+    initialQuality: 0.75,
+    alwaysKeepResolution: false,
     useWebWorker: true,
     fileType: 'image/webp',
   });
@@ -15,8 +22,10 @@ export async function compressConditionPhoto(file: File): Promise<File> {
 
 export async function compressReceipt(file: File): Promise<File> {
   return imageCompression(file, {
-    maxSizeMB: 2,
-    maxWidthOrHeight: 1600,
+    maxSizeMB: 0.8,
+    maxWidthOrHeight: 1280,
+    initialQuality: 0.8,
+    alwaysKeepResolution: false,
     useWebWorker: true,
     fileType: 'image/webp',
   });

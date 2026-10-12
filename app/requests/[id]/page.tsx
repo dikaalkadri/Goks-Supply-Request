@@ -12,7 +12,7 @@ import { LoadingState } from '@/components/ui/States';
 import Button from '@/components/ui/Button';
 import type { Request, RequestItem } from '@/types';
 import { formatDateTime } from '@/lib/utils/format';
-import { compressConditionPhoto, validateImageFile } from '@/lib/utils/image-compress';
+import { compressConditionPhoto, compressReceipt, validateImageFile } from '@/lib/utils/image-compress';
 import toast from 'react-hot-toast';
 
 function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Request; onUpdate: () => void }) {
@@ -44,18 +44,15 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
       return;
     }
 
-    const editToken = hasEditToken();
-    if (!editToken) {
-      toast.error('Anda tidak memiliki akses untuk mengupload untuk permintaan ini.');
-      return;
-    }
 
     setUploadingType(type);
     try {
-      const compressed = await compressConditionPhoto(file);
+      // compressConditionPhoto() always outputs WebP regardless of original format
+      const compressed = type === 'photo'
+        ? await compressConditionPhoto(file)
+        : await compressReceipt(file);
       const bucket = type === 'photo' ? 'request-condition-photos' : 'request-receipts';
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
       const filePath = `${request.id}/${fileName}`;
 
       // Get signed URL
@@ -65,7 +62,7 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
         body: JSON.stringify({
           bucket,
           path: filePath,
-          token: editToken,
+          request_id: request.id,
         }),
       });
 
@@ -75,7 +72,7 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
       // Upload to Supabase directly
       const uploadRes = await fetch(signedUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': file.type },
+        headers: { 'Content-Type': 'image/webp' },
         body: compressed,
       });
 
@@ -88,7 +85,6 @@ function ItemCard({ item, request, onUpdate }: { item: RequestItem; request: Req
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           storage_path: filePath,
-          edit_token: editToken,
           type: apiType,
           request_item_id: item.id,
         }),

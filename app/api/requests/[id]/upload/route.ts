@@ -7,31 +7,27 @@ export async function POST(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { storage_path, edit_token, type, request_item_id } = body as {
+  const { storage_path, type, request_item_id } = body as {
     storage_path: string;
-    edit_token: string;
     type: 'photo' | 'receipt' | 'item_photo' | 'item_receipt';
     request_item_id?: string;
   };
 
-  if (!storage_path || !edit_token || !type || ((type === 'item_photo' || type === 'item_receipt') && !request_item_id)) {
+  if (!storage_path || !type || ((type === 'item_photo' || type === 'item_receipt') && !request_item_id)) {
     return NextResponse.json({ error: 'Data tidak lengkap.' }, { status: 400 });
   }
 
   const supabase = await createAdminClient();
 
-  // Verify edit_token
+  // Verify the request exists (anyone with the link can upload)
   const { data: existing, error: fetchErr } = await supabase
     .from('requests')
-    .select('id, edit_token')
+    .select('id')
     .eq('id', id)
     .single();
 
   if (fetchErr || !existing) {
     return NextResponse.json({ error: 'Permintaan tidak ditemukan.' }, { status: 404 });
-  }
-  if (existing.edit_token !== edit_token) {
-    return NextResponse.json({ error: 'Anda tidak memiliki akses.' }, { status: 403 });
   }
 
   if (type === 'item_photo' || type === 'item_receipt') {

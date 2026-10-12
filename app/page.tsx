@@ -193,7 +193,7 @@ export default function HomePage() {
             body: JSON.stringify({
               bucket: 'request-condition-photos',
               path: storagePath,
-              token: edit_token,
+              request_id,
             }),
           });
 
@@ -212,7 +212,6 @@ export default function HomePage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               storage_path: storagePath,
-              edit_token,
               type: 'item_photo',
               request_item_id: requestItemId,
             }),
