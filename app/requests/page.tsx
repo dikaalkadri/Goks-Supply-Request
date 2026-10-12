@@ -245,10 +245,10 @@ export default function RequestsPage() {
             action={<Link href="/"><Button size="sm">Buat Permintaan</Button></Link>}
           />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             {requests.map((req) => (
-              <Link key={req.id} href={`/requests/${req.id}`}>
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-primary-200 hover:shadow-md transition-all group">
+              <Link key={req.id} href={`/requests/${req.id}`} className="block">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4.5 hover:border-primary-200 hover:shadow-md transition-all group">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -258,7 +258,7 @@ export default function RequestsPage() {
                           {formatDateShort(req.created_at)} {formatTime(req.created_at)}
                         </span>
                       </div>
-                      <p className="text-sm font-semibold text-gray-900 mt-0.5 truncate">
+                      <p className="text-sm font-semibold text-gray-900 mt-1 truncate">
                         {req.outlet?.name ?? '-'}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
