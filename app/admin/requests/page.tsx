@@ -29,8 +29,14 @@ export default function AdminRequestsPage() {
   const [filterPurchase, setFilterPurchase] = useState('');
   const [filterReceipt, setFilterReceipt] = useState('');
   const [filterPhoto, setFilterPhoto] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+
+  // Default date range = today
+  const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const [dateFrom, setDateFrom] = useState(todayStr);
+  const [dateTo, setDateTo] = useState(todayStr);
   const [showFilters, setShowFilters] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -128,7 +134,23 @@ export default function AdminRequestsPage() {
     }
   };
 
-  const hasFilters = filterOutlet || filterStatus || filterPurchase || filterReceipt || filterPhoto || dateFrom || dateTo;
+  // A filter is "active" if any dropdown filter is set, OR the date range differs from today-only
+  const today = todayStr();
+  const hasNonDateFilters = filterOutlet || filterStatus || filterPurchase || filterReceipt || filterPhoto;
+  const hasDateFilter = dateFrom !== today || dateTo !== today;
+  const hasFilters = hasNonDateFilters || hasDateFilter;
+
+  const resetToToday = () => {
+    const t = todayStr();
+    setFilterOutlet('');
+    setFilterStatus('');
+    setFilterPurchase('');
+    setFilterReceipt('');
+    setFilterPhoto('');
+    setDateFrom(t);
+    setDateTo(t);
+    setPage(1);
+  };
 
   return (
     <AdminLayout>
@@ -146,8 +168,9 @@ export default function AdminRequestsPage() {
 
         {/* Search & Filter */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 mb-4 space-y-3">
-          <div className="flex gap-2">
-            <div className="flex-1 flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5">
+          {/* Row 1: Search + Date Range + Filter Toggle */}
+          <div className="flex gap-2 flex-wrap">
+            <div className="flex-1 min-w-[160px] flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5">
               <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
               <input
                 type="text"
@@ -158,15 +181,29 @@ export default function AdminRequestsPage() {
               />
               {search && <button onClick={() => setSearch('')}><X className="h-4 w-4 text-gray-400" /></button>}
             </div>
+
+            {/* Date Range Picker — always visible */}
+            <div className="w-56 shrink-0">
+              <DateRangePicker
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onChange={(from, to) => { setDateFrom(from); setDateTo(to); setPage(1); }}
+                isDefault={!hasDateFilter}
+              />
+            </div>
+
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${hasFilters ? 'bg-primary-100 text-primary-700' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
+              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                hasNonDateFilters ? 'bg-primary-100 text-primary-700' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+              }`}
             >
               <SlidersHorizontal className="h-4 w-4" />
-              Filter {hasFilters && '●'}
+              Filter {hasNonDateFilters && '●'}
             </button>
           </div>
 
+          {/* Row 2: Collapsible dropdown filters */}
           {showFilters && (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pt-2 border-t border-gray-100">
               <select value={filterOutlet} onChange={(e) => { setFilterOutlet(e.target.value); setPage(1); }} className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
@@ -194,16 +231,9 @@ export default function AdminRequestsPage() {
                 <option value="yes">Ada Foto Barang</option>
                 <option value="no">Tanpa Foto Barang</option>
               </select>
-              <div className="col-span-2 sm:col-span-1">
-                <DateRangePicker
-                  dateFrom={dateFrom}
-                  dateTo={dateTo}
-                  onChange={(from, to) => { setDateFrom(from); setDateTo(to); setPage(1); }}
-                />
-              </div>
               {hasFilters && (
                 <button
-                  onClick={() => { setFilterOutlet(''); setFilterStatus(''); setFilterPurchase(''); setFilterReceipt(''); setFilterPhoto(''); setDateFrom(''); setDateTo(''); setPage(1); }}
+                  onClick={resetToToday}
                   className="px-3 py-2 rounded-xl border border-red-200 text-sm text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
                 >
                   Reset Filter

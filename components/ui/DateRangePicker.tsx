@@ -7,9 +7,11 @@ const DAYS_ID = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 export default function DateRangePicker({
   dateFrom, dateTo,
   onChange,
+  isDefault = false,
 }: {
   dateFrom: string; dateTo: string;
   onChange: (from: string, to: string) => void;
+  isDefault?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [hoverDate, setHoverDate] = useState<string>('');
@@ -27,13 +29,15 @@ export default function DateRangePicker({
   }, []);
 
   const displayLabel = () => {
+    if (isDefault) return 'Hari Ini';
     if (!dateFrom && !dateTo) return 'Pilih rentang tanggal';
     const fmt = (d: string) => {
       const [y, m, day] = d.split('-');
       return `${day}/${m}/${y}`;
     };
-    if (dateFrom && dateTo) return `${fmt(dateFrom)} - ${fmt(dateTo)}`;
-    if (dateFrom) return `${fmt(dateFrom)} - ...`;
+    if (dateFrom && dateTo && dateFrom === dateTo) return fmt(dateFrom);
+    if (dateFrom && dateTo) return `${fmt(dateFrom)} – ${fmt(dateTo)}`;
+    if (dateFrom) return `${fmt(dateFrom)} – ...`;
     return '';
   };
 
@@ -90,12 +94,16 @@ export default function DateRangePicker({
         type="button"
         onClick={() => setOpen(o => !o)}
         className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors bg-white w-full ${
-          (dateFrom || dateTo) ? 'border-primary-400 text-primary-700 font-medium' : 'border-gray-200 text-gray-500'
+          isDefault
+            ? 'border-gray-200 text-gray-600'
+            : (dateFrom || dateTo)
+            ? 'border-primary-400 text-primary-700 font-medium'
+            : 'border-gray-200 text-gray-500'
         }`}
       >
-        <CalendarRange className="h-4 w-4 flex-shrink-0" />
+        <CalendarRange className={`h-4 w-4 flex-shrink-0 ${isDefault ? 'text-gray-400' : (dateFrom || dateTo) ? 'text-primary-500' : 'text-gray-400'}`} />
         <span className="flex-1 text-left truncate">{displayLabel()}</span>
-        {(dateFrom || dateTo) && (
+        {!isDefault && (dateFrom || dateTo) && (
           <span
             role="button"
             onClick={(e) => { e.stopPropagation(); onChange('', ''); }}

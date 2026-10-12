@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, Filter, ChevronRight, Package, SlidersHorizontal, X } from 'lucide-react';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import PublicNav from '@/components/layout/PublicNav';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { LoadingState, EmptyState } from '@/components/ui/States';
@@ -44,6 +45,15 @@ export default function RequestsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPurchase, setFilterPurchase] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Default date range = today
+  const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const [dateFrom, setDateFrom] = useState(todayStr);
+  const [dateTo, setDateTo] = useState(todayStr);
+
   // 'mine' = requests submitted from this browser (ids saved in request_tokens on submit)
   const [tab, setTab] = useState<'all' | 'mine'>('all');
   const [myIds, setMyIds] = useState<string[]>([]);
@@ -69,6 +79,8 @@ export default function RequestsPage() {
       if (filterOutlet) params.set('outlet_id', filterOutlet);
       if (filterStatus) params.set('status', filterStatus);
       if (filterPurchase) params.set('purchase_status', filterPurchase);
+      if (dateFrom) params.set('date_from', dateFrom);
+      if (dateTo) params.set('date_to', dateTo);
       params.set('page', String(page));
       params.set('limit', String(limit));
 
@@ -81,7 +93,7 @@ export default function RequestsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterOutlet, filterStatus, filterPurchase, page, tab, myIds, storageReady]);
+  }, [search, filterOutlet, filterStatus, filterPurchase, dateFrom, dateTo, page, tab, myIds, storageReady]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -89,7 +101,21 @@ export default function RequestsPage() {
     fetch('/api/outlets').then((r) => r.json()).then((d) => setOutlets(d.data ?? []));
   }, []);
 
-  const hasFilters = filterOutlet || filterStatus || filterPurchase;
+  const today = todayStr();
+  const hasNonDateFilters = filterOutlet || filterStatus || filterPurchase;
+  const hasDateFilter = dateFrom !== today || dateTo !== today;
+  const hasFilters = hasNonDateFilters || hasDateFilter;
+
+  const resetToToday = () => {
+    const t = todayStr();
+    setFilterOutlet('');
+    writeStorage(OUTLET_FILTER_KEY, '');
+    setFilterStatus('');
+    setFilterPurchase('');
+    setDateFrom(t);
+    setDateTo(t);
+    setPage(1);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -124,8 +150,9 @@ export default function RequestsPage() {
 
         {/* Search + Filter Bar */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 mb-4 space-y-3">
-          <div className="flex gap-2">
-            <div className="flex-1 flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5">
+          {/* Row 1: Search + Date Range + Filter Toggle */}
+          <div className="flex gap-2 flex-wrap">
+            <div className="flex-1 min-w-[150px] flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5">
               <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
               <input
                 type="text"
@@ -140,20 +167,32 @@ export default function RequestsPage() {
                 </button>
               )}
             </div>
+
+            {/* Date Range Picker — selalu tampil */}
+            <div className="w-52 shrink-0">
+              <DateRangePicker
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onChange={(from, to) => { setDateFrom(from); setDateTo(to); setPage(1); }}
+                isDefault={!hasDateFilter}
+              />
+            </div>
+
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                hasFilters ? 'bg-primary-100 text-primary-700' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                hasNonDateFilters ? 'bg-primary-100 text-primary-700' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
               }`}
             >
               <SlidersHorizontal className="h-4 w-4" />
               <span className="hidden sm:inline">Filter</span>
-              {hasFilters && <span className="bg-primary-600 text-white text-xs px-1.5 py-0.5 rounded-full">!</span>}
+              {hasNonDateFilters && <span className="bg-primary-600 text-white text-xs px-1.5 py-0.5 rounded-full">!</span>}
             </button>
           </div>
 
+          {/* Row 2: Collapsible dropdown filters */}
           {showFilters && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-gray-100">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-gray-100">
               <select
                 value={filterOutlet}
                 onChange={(e) => { setFilterOutlet(e.target.value); writeStorage(OUTLET_FILTER_KEY, e.target.value); setPage(1); }}
@@ -181,6 +220,14 @@ export default function RequestsPage() {
                 <option value="not_purchased">Belum Dibeli</option>
                 <option value="purchased">Sudah Dibeli</option>
               </select>
+              {hasFilters && (
+                <button
+                  onClick={resetToToday}
+                  className="px-3 py-2 rounded-xl border border-red-200 text-sm text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                >
+                  Reset Filter
+                </button>
+              )}
             </div>
           )}
         </div>
