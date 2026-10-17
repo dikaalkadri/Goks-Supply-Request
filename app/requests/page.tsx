@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, Filter, ChevronRight, Package, SlidersHorizontal, X, Store } from 'lucide-react';
+import { Search, Filter, ChevronRight, Package, SlidersHorizontal, X } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import PublicNav from '@/components/layout/PublicNav';
 import PublicMenuCards from '@/components/layout/PublicMenuCards';
@@ -140,25 +140,19 @@ export default function RequestsPage() {
     <div className="min-h-screen bg-slate-50">
       <PublicNav />
       <main className="max-w-5xl mx-auto px-4 py-6">
-        <PublicMenuCards className="mb-6 max-w-2xl" />
-        <div className="flex items-center justify-between mb-5">
+        <PublicMenuCards className="mb-6" />
+
+        {/* Title + (public mode) tabs; a logged-in outlet is shown in the subtitle */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Daftar Permintaan</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{total} permintaan ditemukan</p>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {total} permintaan
+              {session && <> · <span className="font-medium text-primary-700">{session.outlet_name}</span></>}
+            </p>
           </div>
-          <Link href="/">
-            <Button size="sm" variant="primary">+ Buat Permintaan</Button>
-          </Link>
-        </div>
-
-        {/* Tabs (public mode) / outlet scope banner (logged in) */}
-        {session ? (
-          <div className="flex items-center gap-2 bg-primary-50 border border-primary-100 text-primary-800 rounded-xl px-3 py-2 mb-3 text-sm w-fit">
-            <Store className="h-4 w-4 flex-shrink-0" />
-            <span>Menampilkan permintaan <span className="font-semibold">{session.outlet_name}</span></span>
-          </div>
-        ) : (
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-3 w-fit">
+        {!session && (
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
           {([['all', 'Semua'], ['mine', 'Permintaan Saya']] as const).map(([key, label]) => (
             <button
               key={key}
@@ -174,6 +168,7 @@ export default function RequestsPage() {
           ))}
         </div>
         )}
+        </div>
 
         {/* Search + Filter Bar */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 mb-4 space-y-3">
@@ -289,11 +284,12 @@ export default function RequestsPage() {
                           {formatDateShort(req.created_at)} {formatTime(req.created_at)}
                         </span>
                       </div>
+                      {/* Logged-in outlet: every row is its own outlet, so show the requester instead */}
                       <p className="text-sm font-semibold text-gray-900 mt-1 truncate">
-                        {req.outlet?.name ?? '-'}
+                        {session ? req.requester_name : (req.outlet?.name ?? '-')}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        oleh {req.requester_name} ·{' '}
+                        {!session && <>oleh {req.requester_name} · </>}
                         {req.request_items?.length ?? 0} barang
                       </p>
                     </div>
