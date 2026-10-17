@@ -4,20 +4,53 @@ import { CalendarRange, X, ChevronLeft, ChevronRight } from 'lucide-react';
 const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const DAYS_ID = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 
+const pad = (n: number) => String(n).padStart(2, '0');
+/** First and last day (YYYY-MM-DD) of a month; month is 0-based. */
+const monthBounds = (year: number, month: number): [string, string] => [
+  `${year}-${pad(month + 1)}-01`,
+  `${year}-${pad(month + 1)}-${pad(new Date(year, month + 1, 0).getDate())}`,
+];
+/** The month covered by the range when it is exactly one whole month, else null. */
+const wholeMonthOf = (from: string, to: string): { year: number; month: number } | null => {
+  if (!from || !to) return null;
+  const [y, m] = from.split('-').map(Number);
+  const [first, last] = monthBounds(y, m - 1);
+  return from === first && to === last ? { year: y, month: m - 1 } : null;
+};
+
+/** Human label for a range: "Oktober 2026" for a whole month, else DD/MM/YYYY – DD/MM/YYYY. */
+export function formatDateRange(dateFrom: string, dateTo: string): string {
+  const whole = wholeMonthOf(dateFrom, dateTo);
+  if (whole) return `${MONTHS_ID[whole.month]} ${whole.year}`;
+  const fmt = (d: string) => {
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y}`;
+  };
+  if (dateFrom && dateTo && dateFrom === dateTo) return fmt(dateFrom);
+  if (dateFrom && dateTo) return `${fmt(dateFrom)} – ${fmt(dateTo)}`;
+  if (dateFrom) return `${fmt(dateFrom)} – ...`;
+  if (dateTo) return `– ${fmt(dateTo)}`;
+  return '';
+}
+
 export default function DateRangePicker({
   dateFrom, dateTo,
   onChange,
   isDefault = false,
+  defaultLabel = 'Hari Ini',
 }: {
   dateFrom: string; dateTo: string;
   onChange: (from: string, to: string) => void;
   isDefault?: boolean;
+  /** Label shown while the page's default range is selected */
+  defaultLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [hoverDate, setHoverDate] = useState<string>('');
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [mode, setMode] = useState<'day' | 'month'>('day');
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,16 +62,9 @@ export default function DateRangePicker({
   }, []);
 
   const displayLabel = () => {
-    if (isDefault) return 'Hari Ini';
+    if (isDefault) return defaultLabel;
     if (!dateFrom && !dateTo) return 'Pilih rentang tanggal';
-    const fmt = (d: string) => {
-      const [y, m, day] = d.split('-');
-      return `${day}/${m}/${y}`;
-    };
-    if (dateFrom && dateTo && dateFrom === dateTo) return fmt(dateFrom);
-    if (dateFrom && dateTo) return `${fmt(dateFrom)} – ${fmt(dateTo)}`;
-    if (dateFrom) return `${fmt(dateFrom)} – ...`;
-    return '';
+    return formatDateRange(dateFrom, dateTo);
   };
 
   const buildDays = () => {
@@ -87,6 +113,14 @@ export default function DateRangePicker({
   };
 
   const days = buildDays();
+  const selectedMonth = wholeMonthOf(dateFrom, dateTo);
+
+  const pickMonth = (month: number) => {
+    const [from, to] = monthBounds(viewYear, month);
+    onChange(from, to);
+    setViewMonth(month);
+    setOpen(false);
+  };
 
   return (
     <div ref={ref} className="relative w-full">
@@ -116,14 +150,72 @@ export default function DateRangePicker({
 
       {open && (
         <div className="absolute z-50 top-full mt-2 left-0 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-72 select-none">
+          {/* Mode: pick a date range, or a whole month in one tap */}
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 mb-3">
+            {([['day', 'Tanggal'], ['month', 'Bulan']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setMode(key)}
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+                  mode === key ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {mode === 'month' ? (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <button type="button" onClick={() => setViewYear(y => y - 1)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Tahun sebelumnya">
+                  <ChevronLeft className="h-4 w-4 text-gray-600" />
+                </button>
+                <span className="text-sm font-semibold text-gray-800">{viewYear}</span>
+                <button type="button" onClick={() => setViewYear(y => y + 1)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Tahun berikutnya">
+                  <ChevronRight className="h-4 w-4 text-gray-600" />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {MONTHS_ID.map((name, m) => {
+                  const selected = selectedMonth?.year === viewYear && selectedMonth.month === m;
+                  const current = today.getFullYear() === viewYear && today.getMonth() === m;
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => pickMonth(m)}
+                      className={`text-xs py-2.5 rounded-lg font-medium transition-colors ${
+                        selected
+                          ? 'bg-primary-600 text-white'
+                          : current
+                          ? 'bg-primary-50 text-primary-700 hover:bg-primary-100'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {name.slice(0, 3)}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-gray-400 text-center mt-3">Pilih bulan untuk menampilkan 1 bulan penuh</p>
+            </>
+          ) : (
+          <>
           <div className="flex items-center justify-between mb-3">
-            <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+            <button type="button" onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
               <ChevronLeft className="h-4 w-4 text-gray-600" />
             </button>
-            <span className="text-sm font-semibold text-gray-800">
+            <button
+              type="button"
+              onClick={() => setMode('month')}
+              className="text-sm font-semibold text-gray-800 px-2 py-0.5 rounded-lg hover:bg-gray-100 transition-colors"
+              title="Pilih bulan"
+            >
               {MONTHS_ID[viewMonth]} {viewYear}
-            </span>
-            <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+            </button>
+            <button type="button" onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
               <ChevronRight className="h-4 w-4 text-gray-600" />
             </button>
           </div>
@@ -162,6 +254,8 @@ export default function DateRangePicker({
           <p className="text-[10px] text-gray-400 text-center mt-3">
             {!dateFrom ? 'Pilih tanggal mulai' : !dateTo ? 'Pilih tanggal akhir' : displayLabel()}
           </p>
+          </>
+          )}
         </div>
       )}
     </div>

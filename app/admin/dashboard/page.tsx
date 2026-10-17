@@ -7,7 +7,7 @@ import { LoadingState } from '@/components/ui/States';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { DashboardStats, Request } from '@/types';
 import Link from 'next/link';
-import DateRangePicker from '@/components/ui/DateRangePicker';
+import DateRangePicker, { formatDateRange } from '@/components/ui/DateRangePicker';
 import { formatDateShort, formatTime } from '@/lib/utils/format';
 
 const IconClipboard = () => (
@@ -333,7 +333,8 @@ export default function AdminDashboardPage() {
 
   useEffect(() => { fetchStats('', ''); }, [fetchStats]);
 
-  const handleApply = () => { setDateFrom(fromInput); setDateTo(toInput); fetchStats(fromInput, toInput); setActivePanel(null); };
+  const applyRange = (from: string, to: string) => { setDateFrom(from); setDateTo(to); fetchStats(from, to); setActivePanel(null); };
+  const handleApply = () => applyRange(fromInput, toInput);
   const handleReset = () => { setFromInput(''); setToInput(''); setDateFrom(''); setDateTo(''); fetchStats('', ''); setActivePanel(null); };
 
   const isFiltered = !!dateFrom || !!dateTo;
@@ -369,7 +370,16 @@ export default function AdminDashboardPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="w-64">
-              <DateRangePicker dateFrom={fromInput} dateTo={toInput} onChange={(f, t) => { setFromInput(f); setToInput(t); }} />
+              <DateRangePicker
+                dateFrom={fromInput}
+                dateTo={toInput}
+                onChange={(f, t) => {
+                  setFromInput(f);
+                  setToInput(t);
+                  // A complete range (e.g. a picked month) or a cleared filter applies right away
+                  if ((f && t) || (!f && !t)) applyRange(f, t);
+                }}
+              />
             </div>
             <button onClick={handleApply} className="px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors">
               Terapkan
@@ -386,7 +396,7 @@ export default function AdminDashboardPage() {
           <div className="mb-4 flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-xs font-semibold">
               <IconFilter />
-              {dateFrom && dateTo ? `${dateFrom} — ${dateTo}` : dateFrom ? `Dari ${dateFrom}` : `Sampai ${dateTo}`}
+              {formatDateRange(dateFrom, dateTo)}
             </span>
             <span className="text-xs text-gray-400">Data difilter berdasarkan tanggal permintaan.</span>
           </div>
@@ -487,7 +497,7 @@ export default function AdminDashboardPage() {
                   <div className="px-5 py-4 border-b border-gray-50">
                     <h2 className="font-semibold text-gray-900 text-sm">Outlet Teraktif</h2>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {isFiltered ? (dateFrom && dateTo ? `${dateFrom} – ${dateTo}` : dateFrom ? `Dari ${dateFrom}` : `Sampai ${dateTo}`) : `${stats.recap.days} hari terakhir`}
+                      {isFiltered ? formatDateRange(dateFrom, dateTo) : `${stats.recap.days} hari terakhir`}
                     </p>
                   </div>
                   <div className="px-5 pb-4">
@@ -522,7 +532,7 @@ export default function AdminDashboardPage() {
                   <div className="px-5 py-4 border-b border-gray-50">
                     <h2 className="font-semibold text-gray-900 text-sm">Barang Paling Sering Diminta</h2>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {isFiltered ? (dateFrom && dateTo ? `${dateFrom} – ${dateTo}` : dateFrom ? `Dari ${dateFrom}` : `Sampai ${dateTo}`) : `${stats.recap.days} hari terakhir`}
+                      {isFiltered ? formatDateRange(dateFrom, dateTo) : `${stats.recap.days} hari terakhir`}
                     </p>
                   </div>
                   <div className="px-5 pb-4">

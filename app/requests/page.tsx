@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, Filter, ChevronRight, Package, SlidersHorizontal, X, Store } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import PublicNav from '@/components/layout/PublicNav';
+import PublicMenuCards from '@/components/layout/PublicMenuCards';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import Button from '@/components/ui/Button';
@@ -47,13 +48,17 @@ export default function RequestsPage() {
   const [filterPurchase, setFilterPurchase] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Default date range = today
-  const todayStr = () => {
+  // Default date range: today (public) or the current month (logged-in outlet)
+  const toYMD = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const todayStr = () => toYMD(new Date());
+  const monthRange = (): [string, string] => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return [toYMD(new Date(d.getFullYear(), d.getMonth(), 1)), toYMD(new Date(d.getFullYear(), d.getMonth() + 1, 0))];
   };
   const [dateFrom, setDateFrom] = useState(todayStr);
   const [dateTo, setDateTo] = useState(todayStr);
+  const [rangeReady, setRangeReady] = useState(false);
 
   // 'mine' = requests submitted from this browser (ids saved in request_tokens on submit)
   const [tab, setTab] = useState<'all' | 'mine'>('all');
@@ -61,6 +66,18 @@ export default function RequestsPage() {
   const [storageReady, setStorageReady] = useState(false);
   // Logged-in outlet: the server scopes the list to that outlet
   const { loading: sessionLoading, session } = useOutletSession();
+
+  // Once the session is known, a logged-in outlet starts on the current month
+  useEffect(() => {
+    if (sessionLoading) return;
+    if (session) {
+      const [from, to] = monthRange();
+      setDateFrom(from);
+      setDateTo(to);
+    }
+    setRangeReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionLoading, session]);
 
   // Restore remembered outlet filter + this browser's request ids
   useEffect(() => {
@@ -73,7 +90,7 @@ export default function RequestsPage() {
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (!storageReady || sessionLoading) return;
+    if (!storageReady || sessionLoading || !rangeReady) return;
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -96,7 +113,7 @@ export default function RequestsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterOutlet, filterStatus, filterPurchase, dateFrom, dateTo, page, tab, myIds, storageReady, sessionLoading, session]);
+  }, [search, filterOutlet, filterStatus, filterPurchase, dateFrom, dateTo, page, tab, myIds, storageReady, sessionLoading, session, rangeReady]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -104,19 +121,18 @@ export default function RequestsPage() {
     fetch('/api/outlets').then((r) => r.json()).then((d) => setOutlets(d.data ?? []));
   }, []);
 
-  const today = todayStr();
+  const [defaultFrom, defaultTo] = session ? monthRange() : [todayStr(), todayStr()];
   const hasNonDateFilters = (!session && filterOutlet) || filterStatus || filterPurchase;
-  const hasDateFilter = dateFrom !== today || dateTo !== today;
+  const hasDateFilter = dateFrom !== defaultFrom || dateTo !== defaultTo;
   const hasFilters = hasNonDateFilters || hasDateFilter;
 
-  const resetToToday = () => {
-    const t = todayStr();
+  const resetFilters = () => {
     setFilterOutlet('');
     writeStorage(OUTLET_FILTER_KEY, '');
     setFilterStatus('');
     setFilterPurchase('');
-    setDateFrom(t);
-    setDateTo(t);
+    setDateFrom(defaultFrom);
+    setDateTo(defaultTo);
     setPage(1);
   };
 
@@ -124,6 +140,7 @@ export default function RequestsPage() {
     <div className="min-h-screen bg-slate-50">
       <PublicNav />
       <main className="max-w-5xl mx-auto px-4 py-6">
+        <PublicMenuCards className="mb-6 max-w-2xl" />
         <div className="flex items-center justify-between mb-5">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Daftar Permintaan</h1>
@@ -185,6 +202,7 @@ export default function RequestsPage() {
                 dateTo={dateTo}
                 onChange={(from, to) => { setDateFrom(from); setDateTo(to); setPage(1); }}
                 isDefault={!hasDateFilter}
+                defaultLabel={session ? 'Bulan Ini' : 'Hari Ini'}
               />
             </div>
 
@@ -234,7 +252,7 @@ export default function RequestsPage() {
               </select>
               {hasFilters && (
                 <button
-                  onClick={resetToToday}
+                  onClick={resetFilters}
                   className="px-3 py-2 rounded-xl border border-red-200 text-sm text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
                 >
                   Reset Filter
