@@ -229,11 +229,14 @@ export default function DistributionPage() {
           <>
             {/* Mobile Cards */}
             <div className="lg:hidden space-y-3">
-              {rows.map(row => (
+              {rows.map((row, i) => (
                 <div key={row.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <p className="font-bold text-gray-900 text-sm">{row.request?.outlet?.name ?? '-'}</p>
+                      <p className="font-bold text-gray-900 text-sm">
+                        <span className="text-gray-400 font-medium tabular-nums mr-1.5">{(page - 1) * limit + i + 1}.</span>
+                        {row.request?.outlet?.name ?? '-'}
+                      </p>
                       <p className="text-xs text-gray-500">{row.request?.request_code}</p>
                     </div>
                     {row.status && STATUS_LABEL[row.status] && (
@@ -260,6 +263,7 @@ export default function DistributionPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50">
+                      <th className="text-right pl-4 pr-2 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-12">No</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tanggal Distribusi</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kode Permintaan</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Barang</th>
@@ -271,8 +275,9 @@ export default function DistributionPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map(row => (
+                    {rows.map((row, i) => (
                       <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
+                        <td className="pl-4 pr-2 py-3 text-right text-gray-400 tabular-nums">{(page - 1) * limit + i + 1}</td>
                         <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
                           {fmtDate(row.request?.created_at ?? row.created_at)}<br />
                           <span className="text-gray-400">{fmtTime(row.request?.created_at ?? row.created_at)}</span>

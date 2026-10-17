@@ -1,4 +1,6 @@
+import { after } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { buildUpdateMessage, notifyRequestFollowers } from '@/lib/push/server';
 import type { RequestLog } from '@/types';
 
 type LogChange = NonNullable<RequestLog['detail']['changes']>[number];
@@ -26,5 +28,13 @@ export async function logRequestEvent(entry: {
     if (error) console.warn('request_logs insert skipped:', error.message);
   } catch (e) {
     console.warn('request_logs insert skipped:', e);
+  }
+
+  // Admin processed the request -> notify the outlet's devices after the
+  // response is sent, so saving in the admin panel isn't slowed down.
+  if (entry.actor === 'admin' && entry.action === 'updated' && entry.request_id && entry.changes) {
+    const message = buildUpdateMessage(entry.request_code, entry.changes);
+    const requestId = entry.request_id;
+    if (message) after(() => notifyRequestFollowers(requestId, message));
   }
 }

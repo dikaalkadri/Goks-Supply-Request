@@ -449,6 +449,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
             <table className="w-full text-sm text-left">
               <thead>
                 <tr className="border-b border-gray-100">
+                  <th className="py-2 pr-3 text-gray-500 font-semibold text-right w-8">No</th>
                   <th className="py-2 text-gray-500 font-semibold">Nama Barang</th>
                   <th className="py-2 text-gray-500 font-semibold text-right">Qty</th>
                   <th className="py-2 text-gray-500 font-semibold pl-4">Satuan</th>
@@ -462,8 +463,9 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
                 </tr>
               </thead>
               <tbody>
-                {request.request_items?.map((item) => (
+                {request.request_items?.map((item, i) => (
                   <tr key={item.id} className="border-b border-gray-50 last:border-0">
+                    <td className="py-2.5 pr-3 text-right text-gray-400 tabular-nums">{i + 1}</td>
                     <td className="py-2.5 font-medium">
                       <span>{item.item_name}</span>
                       {item.is_manual && (

@@ -3,12 +3,12 @@
 -- ============================================================
 
 -- OUTLETS
-INSERT INTO outlets (name, code, is_active) VALUES
-  ('Pauh Kambar',  'PKB', true),
-  ('Balai Baru',   'BBR', true),
-  ('Manggung',     'MGG', true),
-  ('Lubuk Lintah', 'LLT', true),
-  ('Siteba',       'STB', true)
+INSERT INTO outlets (name, is_active) VALUES
+  ('Pauh Kambar',  true),
+  ('Balai Baru',   true),
+  ('Manggung',     true),
+  ('Lubuk Lintah', true),
+  ('Siteba',       true)
 ON CONFLICT DO NOTHING;
 
 -- MASTER BARANG

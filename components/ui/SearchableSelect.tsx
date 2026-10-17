@@ -88,7 +88,7 @@ export default function SearchableSelect({
             {selected ? selected.label : placeholder}
           </span>
           <div className="flex items-center gap-1">
-            {value && (
+            {value && !disabled && (
               <span
                 role="button"
                 tabIndex={0}

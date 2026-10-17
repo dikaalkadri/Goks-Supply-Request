@@ -147,6 +147,7 @@ export default function AdminItemsPage() {
               <table className="w-full text-sm text-left">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="pl-4 pr-2 py-3 text-gray-500 font-semibold uppercase text-xs text-right w-12">No</th>
                     <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Nama Barang</th>
                     <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Satuan</th>
                     <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Kategori</th>
@@ -156,10 +157,11 @@ export default function AdminItemsPage() {
                 </thead>
                 <tbody>
                   {filtered.length === 0 ? (
-                    <tr><td colSpan={5} className="p-8 text-center text-gray-500">Data tidak ditemukan.</td></tr>
+                    <tr><td colSpan={6} className="p-8 text-center text-gray-500">Data tidak ditemukan.</td></tr>
                   ) : (
-                    filtered.map(item => (
+                    filtered.map((item, i) => (
                       <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                        <td className="pl-4 pr-2 py-3 text-right text-gray-400 tabular-nums">{i + 1}</td>
                         <td className="px-4 py-3 font-medium text-gray-900 flex items-center gap-2">
                           <Package className="h-4 w-4 text-gray-400" /> {item.name}
                         </td>

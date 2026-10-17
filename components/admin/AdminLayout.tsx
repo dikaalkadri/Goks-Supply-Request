@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, FileText, Package, Building2,
-  Settings, LogOut, Menu, X, ShoppingCart, BarChart2
+  Settings, LogOut, Menu, X, ShoppingCart, BarChart2, Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/admin/distribution', label: 'Distribusi Barang',  icon: BarChart2 },
   { href: '/admin/items',        label: 'Master Barang',      icon: Package },
   { href: '/admin/outlets',      label: 'Outlet',             icon: Building2 },
+  { href: '/admin/users',        label: 'Akun Outlet',        icon: Users },
   { href: '/admin/settings',     label: 'Pengaturan',         icon: Settings },
 ];
 

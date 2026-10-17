@@ -11,6 +11,9 @@ ALTER TABLE request_photos   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchase_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE request_logs     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE outlet_users     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE push_follows     ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- OUTLETS: public can read active, admin (service role) can ALL

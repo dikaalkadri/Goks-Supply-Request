@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { generateRequestCode } from '@/lib/utils/request-code';
 import { sanitizeSearch, mediaFilterSelect, applyMediaFilters } from '@/lib/utils/request-query';
 import { logRequestEvent } from '@/lib/utils/request-log';
+import { getOutletSession } from '@/lib/auth/outlet-session';
 import type { ItemFormData } from '@/types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -11,12 +12,15 @@ const MAX_CODE_ATTEMPTS = 5;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { outlet_id, requester_name, note, items } = body as {
+    const { requester_name, note, items } = body as {
       outlet_id: string;
       requester_name: string;
       note?: string;
       items: ItemFormData[];
     };
+    // A logged-in outlet can only submit for itself; public mode uses the chosen outlet
+    const session = await getOutletSession();
+    const outlet_id = session ? session.outlet_id : (body.outlet_id as string);
 
     // Validation
     if (!outlet_id || typeof outlet_id !== 'string') {
@@ -132,8 +136,10 @@ export async function GET(req: NextRequest) {
   const supabase = await createServerClient();
   const { searchParams } = new URL(req.url);
 
+  // Logged-in outlet only sees its own requests; public mode sees everything
+  const session      = await getOutletSession();
   const search       = sanitizeSearch(searchParams.get('search') ?? '');
-  const outlet_id    = searchParams.get('outlet_id') ?? '';
+  const outlet_id    = session ? session.outlet_id : (searchParams.get('outlet_id') ?? '');
   const status       = searchParams.get('status') ?? '';
   const purchaseSt   = searchParams.get('purchase_status') ?? '';
   const hasReceipt   = searchParams.get('has_receipt') ?? '';

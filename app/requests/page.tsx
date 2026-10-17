@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, Filter, ChevronRight, Package, SlidersHorizontal, X } from 'lucide-react';
+import { Search, Filter, ChevronRight, Package, SlidersHorizontal, X, Store } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import PublicNav from '@/components/layout/PublicNav';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -11,6 +11,7 @@ import Button from '@/components/ui/Button';
 import type { Request, Outlet } from '@/types';
 import { formatDateShort, formatTime } from '@/lib/utils/format';
 import { cn } from '@/lib/utils/cn';
+import { useOutletSession } from '@/lib/auth/use-outlet-session';
 
 const OUTLET_FILTER_KEY = 'requests_filter_outlet';
 
@@ -58,6 +59,8 @@ export default function RequestsPage() {
   const [tab, setTab] = useState<'all' | 'mine'>('all');
   const [myIds, setMyIds] = useState<string[]>([]);
   const [storageReady, setStorageReady] = useState(false);
+  // Logged-in outlet: the server scopes the list to that outlet
+  const { loading: sessionLoading, session } = useOutletSession();
 
   // Restore remembered outlet filter + this browser's request ids
   useEffect(() => {
@@ -70,13 +73,13 @@ export default function RequestsPage() {
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (!storageReady) return;
+    if (!storageReady || sessionLoading) return;
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (tab === 'mine') params.set('ids', myIds.join(','));
+      if (!session && tab === 'mine') params.set('ids', myIds.join(','));
       if (search) params.set('search', search);
-      if (filterOutlet) params.set('outlet_id', filterOutlet);
+      if (!session && filterOutlet) params.set('outlet_id', filterOutlet);
       if (filterStatus) params.set('status', filterStatus);
       if (filterPurchase) params.set('purchase_status', filterPurchase);
       if (dateFrom) params.set('date_from', dateFrom);
@@ -93,7 +96,7 @@ export default function RequestsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterOutlet, filterStatus, filterPurchase, dateFrom, dateTo, page, tab, myIds, storageReady]);
+  }, [search, filterOutlet, filterStatus, filterPurchase, dateFrom, dateTo, page, tab, myIds, storageReady, sessionLoading, session]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -102,7 +105,7 @@ export default function RequestsPage() {
   }, []);
 
   const today = todayStr();
-  const hasNonDateFilters = filterOutlet || filterStatus || filterPurchase;
+  const hasNonDateFilters = (!session && filterOutlet) || filterStatus || filterPurchase;
   const hasDateFilter = dateFrom !== today || dateTo !== today;
   const hasFilters = hasNonDateFilters || hasDateFilter;
 
@@ -131,7 +134,13 @@ export default function RequestsPage() {
           </Link>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs (public mode) / outlet scope banner (logged in) */}
+        {session ? (
+          <div className="flex items-center gap-2 bg-primary-50 border border-primary-100 text-primary-800 rounded-xl px-3 py-2 mb-3 text-sm w-fit">
+            <Store className="h-4 w-4 flex-shrink-0" />
+            <span>Menampilkan permintaan <span className="font-semibold">{session.outlet_name}</span></span>
+          </div>
+        ) : (
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-3 w-fit">
           {([['all', 'Semua'], ['mine', 'Permintaan Saya']] as const).map(([key, label]) => (
             <button
@@ -147,6 +156,7 @@ export default function RequestsPage() {
             </button>
           ))}
         </div>
+        )}
 
         {/* Search + Filter Bar */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 mb-4 space-y-3">
@@ -193,6 +203,7 @@ export default function RequestsPage() {
           {/* Row 2: Collapsible dropdown filters */}
           {showFilters && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-gray-100">
+              {!session && (
               <select
                 value={filterOutlet}
                 onChange={(e) => { setFilterOutlet(e.target.value); writeStorage(OUTLET_FILTER_KEY, e.target.value); setPage(1); }}
@@ -201,6 +212,7 @@ export default function RequestsPage() {
                 <option value="">Semua Outlet</option>
                 {outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
               </select>
+              )}
               <select
                 value={filterStatus}
                 onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
@@ -238,20 +250,21 @@ export default function RequestsPage() {
         ) : requests.length === 0 ? (
           <EmptyState
             icon={<Package className="h-12 w-12" />}
-            title={tab === 'mine' ? 'Belum ada permintaan dari perangkat ini.' : 'Belum ada permintaan barang.'}
-            description={tab === 'mine'
+            title={!session && tab === 'mine' ? 'Belum ada permintaan dari perangkat ini.' : 'Belum ada permintaan barang.'}
+            description={!session && tab === 'mine'
               ? 'Permintaan yang Anda kirim dari browser ini akan muncul di sini.'
               : 'Buat permintaan baru untuk memulai.'}
             action={<Link href="/"><Button size="sm">Buat Permintaan</Button></Link>}
           />
         ) : (
           <div className="space-y-3.5">
-            {requests.map((req) => (
+            {requests.map((req, i) => (
               <Link key={req.id} href={`/requests/${req.id}`} className="block">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4.5 hover:border-primary-200 hover:shadow-md transition-all group">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm text-gray-400 font-medium tabular-nums">{(page - 1) * limit + i + 1}.</span>
                         <span className="font-bold text-primary-700 text-sm">{req.request_code}</span>
                         <span className="text-gray-300">·</span>
                         <span className="text-xs text-gray-500">
