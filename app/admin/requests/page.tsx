@@ -42,13 +42,15 @@ export default function AdminRequestsPage() {
   const [filterReceipt, setFilterReceipt] = useState('');
   const [filterPhoto, setFilterPhoto] = useState('');
 
-  // Default date range = today
-  const todayStr = () => {
+  // Default date range = the current month (1st to last day)
+  const monthRange = (): [string, string] => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const ymd = (x: Date) =>
+      `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+    return [ymd(new Date(d.getFullYear(), d.getMonth(), 1)), ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0))];
   };
-  const [dateFrom, setDateFrom] = useState(todayStr);
-  const [dateTo, setDateTo] = useState(todayStr);
+  const [dateFrom, setDateFrom] = useState(() => monthRange()[0]);
+  const [dateTo, setDateTo] = useState(() => monthRange()[1]);
   const [showFilters, setShowFilters] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -66,6 +68,11 @@ export default function AdminRequestsPage() {
     if (q.get('purchase_status')) setFilterPurchase(q.get('purchase_status')!);
     if (q.get('has_receipt')) setFilterReceipt(q.get('has_receipt')!);
     if (q.get('has_photo')) setFilterPhoto(q.get('has_photo')!);
+    // Dashboard links pass its date filter; an explicit empty value means "all dates"
+    if (q.has('date_from') || q.has('date_to')) {
+      setDateFrom(q.get('date_from') ?? '');
+      setDateTo(q.get('date_to') ?? '');
+    }
     if ([...q.keys()].length > 0) setShowFilters(true);
   }, []);
 
@@ -146,21 +153,20 @@ export default function AdminRequestsPage() {
     }
   };
 
-  // A filter is "active" if any dropdown filter is set, OR the date range differs from today-only
-  const today = todayStr();
+  // A filter is "active" if any dropdown filter is set, OR the date range differs from this month
+  const [monthFrom, monthTo] = monthRange();
   const hasNonDateFilters = filterOutlet || filterStatus || filterPurchase || filterReceipt || filterPhoto;
-  const hasDateFilter = dateFrom !== today || dateTo !== today;
+  const hasDateFilter = dateFrom !== monthFrom || dateTo !== monthTo;
   const hasFilters = hasNonDateFilters || hasDateFilter;
 
-  const resetToToday = () => {
-    const t = todayStr();
+  const resetFilters = () => {
     setFilterOutlet('');
     setFilterStatus('');
     setFilterPurchase('');
     setFilterReceipt('');
     setFilterPhoto('');
-    setDateFrom(t);
-    setDateTo(t);
+    setDateFrom(monthFrom);
+    setDateTo(monthTo);
     setPage(1);
   };
 
@@ -200,6 +206,7 @@ export default function AdminRequestsPage() {
                 dateTo={dateTo}
                 onChange={(from, to) => { setDateFrom(from); setDateTo(to); setPage(1); }}
                 isDefault={!hasDateFilter}
+                defaultLabel="Bulan Ini"
               />
             </div>
 
@@ -244,7 +251,7 @@ export default function AdminRequestsPage() {
               </select>
               {hasFilters && (
                 <button
-                  onClick={resetToToday}
+                  onClick={resetFilters}
                   className="px-3 py-2 rounded-xl border border-red-200 text-sm text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
                 >
                   Reset Filter

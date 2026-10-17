@@ -127,10 +127,12 @@ const CARD_DEFS: CardDef[] = [
     getParams: (f, t) => { const p: Record<string, string> = { purchase_status: 'purchased' }; if (f) p.date_from = f; if (t) p.date_to = t; return p; } },
 ];
 
+// Links always carry the dashboard's date range (empty = all dates), so the
+// request list shows the same data instead of falling back to its own default.
 function buildHref(base: string, params: Record<string, string>, dateFrom: string, dateTo: string) {
   const p = new URLSearchParams(params);
-  if (dateFrom) p.set('date_from', dateFrom);
-  if (dateTo)   p.set('date_to', dateTo);
+  if (!p.has('date_from')) p.set('date_from', dateFrom);
+  if (!p.has('date_to'))   p.set('date_to', dateTo);
   const qs = p.toString();
   return qs ? `${base}?${qs}` : base;
 }
