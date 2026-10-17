@@ -25,9 +25,15 @@ export async function GET() {
     return NextResponse.json({ error: 'Gagal memuat akun.' }, { status: 500 });
   }
 
-  const withAccount = new Set((usersRes.data ?? []).map((u) => u.outlet_id));
+  // List accounts in the same order as the Outlet menu (drag & drop order)
+  const position = new Map((outletsRes.data ?? []).map((o, i) => [o.id, i]));
+  const users = [...(usersRes.data ?? [])].sort(
+    (a, b) => (position.get(a.outlet_id) ?? Infinity) - (position.get(b.outlet_id) ?? Infinity)
+  );
+
+  const withAccount = new Set(users.map((u) => u.outlet_id));
   return NextResponse.json({
-    data: usersRes.data ?? [],
+    data: users,
     outlets_without_account: (outletsRes.data ?? []).filter((o) => !withAccount.has(o.id)),
     default_password: DEFAULT_OUTLET_PASSWORD,
   });
