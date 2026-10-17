@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { BarChart2, CalendarRange, X, ChevronLeft, ChevronRight, Search, RotateCcw } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminPage from '@/components/admin/AdminPage';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import type { Item } from '@/types';
 
@@ -101,19 +102,7 @@ export default function DistributionPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6 max-w-6xl">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center">
-              <BarChart2 className="h-5 w-5 text-indigo-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Distribusi Barang</h1>
-              <p className="text-sm text-gray-500">Lihat distribusi barang ke outlet berdasarkan periode</p>
-            </div>
-          </div>
-        </div>
+      <AdminPage title="Distribusi Barang" subtitle="Lihat distribusi barang ke outlet berdasarkan periode.">
 
         {/* Filter Bar */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5 flex flex-wrap gap-3 items-end">
@@ -333,7 +322,7 @@ export default function DistributionPage() {
             )}
           </>
         )}
-      </div>
+      </AdminPage>
     </AdminLayout>
   );
 }

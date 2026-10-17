@@ -3,6 +3,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminPage from '@/components/admin/AdminPage';
+import Button from '@/components/ui/Button';
 import { LoadingState } from '@/components/ui/States';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { DashboardStats, Request } from '@/types';
@@ -362,13 +364,11 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6">
-        <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-500 text-sm mt-1">Ringkasan permintaan &amp; pembelian barang.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+      <AdminPage
+        title="Dashboard"
+        subtitle="Ringkasan permintaan & pembelian barang."
+        actions={
+          <>
             <div className="w-64">
               <DateRangePicker
                 dateFrom={fromInput}
@@ -381,16 +381,18 @@ export default function AdminDashboardPage() {
                 }}
               />
             </div>
-            <button onClick={handleApply} className="px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors">
-              Terapkan
-            </button>
-            {isFiltered && (
-              <button onClick={handleReset} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1">
-                <IconRefresh /> Reset
-              </button>
+            {/* Only needed when just a start date is picked; complete ranges apply automatically */}
+            {fromInput && !toInput && (
+              <Button size="sm" onClick={handleApply}>Terapkan</Button>
             )}
-          </div>
-        </div>
+            {isFiltered && (
+              <Button size="sm" variant="secondary" onClick={handleReset}>
+                <IconRefresh /> Reset
+              </Button>
+            )}
+          </>
+        }
+      >
 
         {isFiltered && (
           <div className="mb-4 flex items-center gap-2">
@@ -505,7 +507,7 @@ export default function AdminDashboardPage() {
                       <p className="text-sm text-gray-400 text-center py-6">Belum ada permintaan.</p>
                     ) : (
                       <table className="w-full text-sm">
-                        <thead><tr className="text-xs text-gray-400 uppercase tracking-wide">
+                        <thead><tr className="text-xs text-gray-500 uppercase tracking-wide">
                           <th className="text-left py-3 font-semibold">Outlet</th>
                           <th className="text-right py-3 font-semibold">Req</th>
                           <th className="text-right py-3 font-semibold">Barang</th>
@@ -540,7 +542,7 @@ export default function AdminDashboardPage() {
                       <p className="text-sm text-gray-400 text-center py-6">Belum ada permintaan.</p>
                     ) : (
                       <table className="w-full text-sm">
-                        <thead><tr className="text-xs text-gray-400 uppercase tracking-wide">
+                        <thead><tr className="text-xs text-gray-500 uppercase tracking-wide">
                           <th className="text-left py-3 font-semibold">Barang</th>
                           <th className="text-right py-3 font-semibold">Req</th>
                           <th className="text-right py-3 font-semibold">Qty</th>
@@ -571,7 +573,7 @@ export default function AdminDashboardPage() {
             )}
           </>
         )}
-      </div>
+      </AdminPage>
     </AdminLayout>
   );
 }

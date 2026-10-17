@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Lock, Save } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminPage from '@/components/admin/AdminPage';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import toast from 'react-hot-toast';
@@ -47,13 +48,8 @@ export default function AdminSettingsPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6 max-w-2xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Pengaturan</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Konfigurasi sistem admin.</p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <AdminPage title="Pengaturan" subtitle="Konfigurasi sistem admin.">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-w-2xl">
           <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
             <Lock className="h-5 w-5 text-gray-400" /> Ganti PIN Admin
           </h2>
@@ -89,7 +85,7 @@ export default function AdminSettingsPage() {
             </div>
           </form>
         </div>
-      </div>
+      </AdminPage>
     </AdminLayout>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Package, Trash2, Save, History, Plus, X, Search } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminPage from '@/components/admin/AdminPage';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
@@ -255,20 +256,20 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
 
   return (
     <AdminLayout>
-      <div className="p-6 max-w-4xl">
-        <Link href="/admin/requests" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6">
-          <ArrowLeft className="h-4 w-4" /> Kembali ke Daftar
-        </Link>
-
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{request.request_code}</h1>
-            <p className="text-sm text-gray-500 mt-1">{formatDateTime(request.created_at)}</p>
-          </div>
+      <AdminPage
+        breadcrumb={
+          <Link href="/admin/requests" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+            <ArrowLeft className="h-4 w-4" /> Kembali ke Permintaan
+          </Link>
+        }
+        title={request.request_code}
+        subtitle={formatDateTime(request.created_at)}
+        actions={
           <Button variant="primary" onClick={handleSave} loading={saving}>
             <Save className="h-4 w-4" /> Simpan Perubahan
           </Button>
-        </div>
+        }
+      >
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
@@ -449,17 +450,17 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
             <table className="w-full text-sm text-left">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="py-2 pr-3 text-gray-500 font-semibold text-right w-8">No</th>
-                  <th className="py-2 text-gray-500 font-semibold">Nama Barang</th>
-                  <th className="py-2 text-gray-500 font-semibold text-right">Qty</th>
-                  <th className="py-2 text-gray-500 font-semibold pl-4">Satuan</th>
-                  <th className="py-2 text-gray-500 font-semibold text-center pl-4">Pengiriman/Pembelian</th>
-                  <th className="py-2 text-gray-500 font-semibold pl-4 text-center">Foto Rusak</th>
-                  <th className="py-2 text-gray-500 font-semibold pl-4 text-center">Foto Nota</th>
-                  <th className="py-2 text-gray-500 font-semibold pl-4">Status</th>
-                  <th className="py-2 text-gray-500 font-semibold pl-4">Catatan</th>
-                  <th className="py-2 text-gray-500 font-semibold pl-4 whitespace-nowrap">Tgl Pengiriman</th>
-                  <th className="py-2 text-gray-500 font-semibold pl-4"></th>
+                  <th className="py-2.5 pr-3 text-xs text-gray-500 font-semibold uppercase tracking-wide text-right w-8">No</th>
+                  <th className="py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wide">Nama Barang</th>
+                  <th className="py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wide text-right">Qty</th>
+                  <th className="py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wide pl-4">Satuan</th>
+                  <th className="py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wide text-center pl-4">Pengiriman/Pembelian</th>
+                  <th className="py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wide pl-4 text-center">Foto Rusak</th>
+                  <th className="py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wide pl-4 text-center">Foto Nota</th>
+                  <th className="py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wide pl-4">Status</th>
+                  <th className="py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wide pl-4">Catatan</th>
+                  <th className="py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wide pl-4 whitespace-nowrap">Tgl Pengiriman</th>
+                  <th className="py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wide pl-4"></th>
                 </tr>
               </thead>
               <tbody>
@@ -602,7 +603,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
             </ol>
           )}
         </div>
-      </div>
+      </AdminPage>
     </AdminLayout>
   );
 }

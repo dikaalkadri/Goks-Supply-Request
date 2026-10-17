@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Users, Plus, Edit, Trash2, KeyRound, Search, X, Wand2, Unlock, AlertTriangle } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminPage from '@/components/admin/AdminPage';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
@@ -214,27 +215,22 @@ export default function AdminUsersPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6 max-w-5xl">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Akun Outlet</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Akun login untuk outlet. Outlet yang login hanya melihat permintaannya sendiri.
-            </p>
-          </div>
-          {!loadError && (
-            <div className="flex gap-2 flex-wrap">
-              {missingOutlets.length > 0 && (
-                <Button variant="secondary" onClick={() => setConfirmGenerate(true)}>
-                  <Wand2 className="h-4 w-4" /> Buat Akun Semua Outlet ({missingOutlets.length})
-                </Button>
-              )}
-              <Button onClick={openAdd} disabled={missingOutlets.length === 0}>
-                <Plus className="h-4 w-4" /> Tambah Akun
+      <AdminPage
+        title="Akun Outlet"
+        subtitle="Akun login untuk outlet. Outlet yang login hanya melihat permintaannya sendiri."
+        actions={!loadError && (
+          <>
+            {missingOutlets.length > 0 && (
+              <Button variant="secondary" onClick={() => setConfirmGenerate(true)}>
+                <Wand2 className="h-4 w-4" /> Buat Akun Semua Outlet ({missingOutlets.length})
               </Button>
-            </div>
-          )}
-        </div>
+            )}
+            <Button onClick={openAdd} disabled={missingOutlets.length === 0}>
+              <Plus className="h-4 w-4" /> Tambah Akun
+            </Button>
+          </>
+        )}
+      >
 
         {loadError ? (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-sm text-amber-800 flex gap-3">
@@ -276,12 +272,12 @@ export default function AdminUsersPage() {
                   <table className="w-full text-sm text-left">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="pl-4 pr-2 py-3 text-gray-500 font-semibold uppercase text-xs text-right w-12">No</th>
-                        <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Username</th>
-                        <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Outlet</th>
-                        <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs text-center">Status</th>
-                        <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Login Terakhir</th>
-                        <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs text-right">Aksi</th>
+                        <th className="pl-4 pr-2 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right w-12">No</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Username</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Outlet</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Status</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Login Terakhir</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -363,7 +359,7 @@ export default function AdminUsersPage() {
             </div>
           </>
         )}
-      </div>
+      </AdminPage>
 
       {/* Add / Edit Modal */}
       <Modal open={modalOpen} onClose={() => !saving && setModalOpen(false)} title={editUser ? 'Edit Akun' : 'Tambah Akun'}>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Package, Plus, Search, Edit, Trash2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminPage from '@/components/admin/AdminPage';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
@@ -117,14 +118,11 @@ export default function AdminItemsPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6 max-w-5xl">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Master Barang</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Kelola daftar barang yang bisa dipilih crew.</p>
-          </div>
-          <Button onClick={() => openModal()}><Plus className="h-4 w-4" /> Tambah Barang</Button>
-        </div>
+      <AdminPage
+        title="Master Barang"
+        subtitle="Kelola daftar barang yang bisa dipilih crew."
+        actions={<Button onClick={() => openModal()}><Plus className="h-4 w-4" /> Tambah Barang</Button>}
+      >
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-100">
@@ -147,12 +145,12 @@ export default function AdminItemsPage() {
               <table className="w-full text-sm text-left">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="pl-4 pr-2 py-3 text-gray-500 font-semibold uppercase text-xs text-right w-12">No</th>
-                    <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Nama Barang</th>
-                    <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Satuan</th>
-                    <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Kategori</th>
-                    <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs text-center">Status</th>
-                    <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs text-right">Aksi</th>
+                    <th className="pl-4 pr-2 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right w-12">No</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Barang</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Satuan</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kategori</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Status</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -198,7 +196,7 @@ export default function AdminItemsPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminPage>
 
       {/* Edit / Add Modal */}
       <Modal open={modalOpen} onClose={() => !saving && setModalOpen(false)} title={editId ? 'Edit Barang' : 'Tambah Barang'}>

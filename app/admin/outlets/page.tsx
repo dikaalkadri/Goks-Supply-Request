@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminPage from '@/components/admin/AdminPage';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
@@ -219,16 +220,11 @@ export default function AdminOutletsPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6 max-w-5xl">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Manajemen Outlet</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Kelola daftar cabang outlet. Tekan dan tahan baris, lalu geser untuk mengubah urutan.
-            </p>
-          </div>
-          <Button onClick={() => openModal()}><Plus className="h-4 w-4" /> Tambah Outlet</Button>
-        </div>
+      <AdminPage
+        title="Outlet"
+        subtitle="Kelola daftar outlet. Tekan dan tahan baris, lalu geser untuk mengubah urutan."
+        actions={<Button onClick={() => openModal()}><Plus className="h-4 w-4" /> Tambah Outlet</Button>}
+      >
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {loading ? (
@@ -241,10 +237,10 @@ export default function AdminOutletsPage() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
                     <th className="w-6" aria-label="Geser" />
-                    <th className="pl-2 pr-2 py-3 text-gray-500 font-semibold uppercase text-xs text-right w-12">No</th>
-                    <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Nama Outlet</th>
-                    <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs text-center">Status</th>
-                    <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs text-right">Aksi</th>
+                    <th className="pl-2 pr-2 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right w-12">No</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Outlet</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Status</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -269,7 +265,7 @@ export default function AdminOutletsPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminPage>
 
       {/* Edit / Add Modal */}
       <Modal open={modalOpen} onClose={() => !saving && setModalOpen(false)} title={editId ? 'Edit Outlet' : 'Tambah Outlet'}>

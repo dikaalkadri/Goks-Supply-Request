@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Search, SlidersHorizontal, Trash2, Edit, CalendarRange, Download, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminPage from '@/components/admin/AdminPage';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -154,17 +155,16 @@ export default function AdminRequestsPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Manajemen Permintaan</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{total} permintaan</p>
-          </div>
+      <AdminPage
+        title="Permintaan"
+        subtitle={`${total} permintaan`}
+        actions={
           <Button variant="secondary" size="sm" onClick={handleExport} loading={exporting}>
             <Download className="h-4 w-4" />
             Export Excel
           </Button>
-        </div>
+        }
+      >
 
         {/* Search & Filter */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 mb-4 space-y-3">
@@ -353,7 +353,7 @@ export default function AdminRequestsPage() {
             )}
           </>
         )}
-      </div>
+      </AdminPage>
 
       <ConfirmDialog
         open={Boolean(deleteId)}
