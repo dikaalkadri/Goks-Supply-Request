@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
+import { startOfDayWIB, endOfDayWIB } from '@/lib/utils/date-range';
 import { generateRequestCode } from '@/lib/utils/request-code';
 import { sanitizeSearch, mediaFilterSelect, applyMediaFilters } from '@/lib/utils/request-query';
 import { logRequestEvent } from '@/lib/utils/request-log';
@@ -168,8 +169,10 @@ export async function GET(req: NextRequest) {
   if (outlet_id)  query = query.eq('outlet_id', outlet_id);
   if (status)     query = query.eq('status', status);
   if (purchaseSt) query = query.eq('purchase_status', purchaseSt);
-  if (dateFrom)   query = query.gte('created_at', dateFrom);
-  if (dateTo)     query = query.lte('created_at', dateTo + 'T23:59:59');
+  const fromTs = startOfDayWIB(dateFrom);
+  const toTs   = endOfDayWIB(dateTo);
+  if (fromTs)     query = query.gte('created_at', fromTs);
+  if (toTs)       query = query.lte('created_at', toTs);
 
   if (search) {
     query = query.or(

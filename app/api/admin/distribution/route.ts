@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { startOfDayWIB, endOfDayWIB, dateWIB } from '@/lib/utils/date-range';
 
 export async function GET(req: NextRequest) {
   const supabase = await createAdminClient();
@@ -36,12 +37,10 @@ export async function GET(req: NextRequest) {
     .eq('item_id', itemId)
     .not('request', 'is', null);
 
-  if (dateFrom) {
-    query = query.gte('request.created_at', dateFrom);
-  }
-  if (dateTo) {
-    query = query.lte('request.created_at', dateTo + 'T23:59:59');
-  }
+  const fromTs = startOfDayWIB(dateFrom);
+  const toTs   = endOfDayWIB(dateTo);
+  if (fromTs) query = query.gte('request.created_at', fromTs);
+  if (toTs)   query = query.lte('request.created_at', toTs);
 
   query = query
     .order('created_at', { ascending: false })
@@ -60,7 +59,7 @@ export async function GET(req: NextRequest) {
     rows = rows.filter((row) => {
       const reqDate = row.request?.created_at;
       if (!reqDate) return false;
-      const d = reqDate.substring(0, 10);
+      const d = dateWIB(reqDate);
       if (dateFrom && d < dateFrom) return false;
       if (dateTo && d > dateTo) return false;
       return true;

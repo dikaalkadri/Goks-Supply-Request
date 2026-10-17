@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { DashboardRecap } from '@/types';
+import { startOfDayWIB, endOfDayWIB, dateWIB } from '@/lib/utils/date-range';
 
 // GET: admin dashboard stats
 // Supports optional ?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD
@@ -14,19 +15,22 @@ export async function GET(req: NextRequest) {
   // Helper – apply date range to any query
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function applyRange(q: any) {
-    if (dateFrom) q = q.gte('created_at', dateFrom);
-    if (dateTo)   q = q.lte('created_at', dateTo + 'T23:59:59');
+    const fromTs = startOfDayWIB(dateFrom);
+    const toTs   = endOfDayWIB(dateTo);
+    if (fromTs) q = q.gte('created_at', fromTs);
+    if (toTs)   q = q.lte('created_at', toTs);
     return q;
   }
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  // "Hari ini" = the current WIB day
+  const todayStart = startOfDayWIB(dateWIB())!;
 
   const [totalRes, todayRes, statusRes, purchaseRes, noReceiptRes] = await Promise.all([
     applyRange(supabase.from('requests').select('id', { count: 'exact', head: true })),
     // "hari ini" is always the actual calendar day regardless of filter
     supabase.from('requests')
       .select('id', { count: 'exact', head: true })
-      .gte('created_at', todayStr),
+      .gte('created_at', todayStart),
     applyRange(supabase.from('requests').select('status')),
     applyRange(supabase.from('requests').select('purchase_status')),
     applyRange(
@@ -73,12 +77,12 @@ async function buildRecap(
   let days:  number;
 
   if (dateFrom && dateTo) {
-    since = dateFrom;
+    since = startOfDayWIB(dateFrom) ?? dateFrom;
     days  = Math.round(
       (new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / (24 * 60 * 60 * 1000)
     ) + 1;
   } else if (dateFrom) {
-    since = dateFrom;
+    since = startOfDayWIB(dateFrom) ?? dateFrom;
     days  = Math.round((Date.now() - new Date(dateFrom).getTime()) / (24 * 60 * 60 * 1000)) + 1;
   } else {
     since = new Date(Date.now() - RECAP_DAYS * 24 * 60 * 60 * 1000).toISOString();
@@ -91,7 +95,8 @@ async function buildRecap(
     .select('outlet_id, outlet:outlets(name), request_items(*)')
     .gte('created_at', since);
 
-  if (dateTo) q = q.lte('created_at', dateTo + 'T23:59:59');
+  const toTs = endOfDayWIB(dateTo);
+  if (toTs) q = q.lte('created_at', toTs);
 
   const { data, error } = await q;
   if (error || !data) return { days, top_outlets: [], top_items: [] };
