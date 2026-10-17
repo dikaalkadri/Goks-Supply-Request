@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
-import { Search, SlidersHorizontal, Trash2, Edit, CalendarRange, Download, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, SlidersHorizontal, Trash2, CalendarRange, Download, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminPage from '@/components/admin/AdminPage';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -17,6 +17,17 @@ import * as XLSX from 'xlsx';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 
 export default function AdminRequestsPage() {
+  const router = useRouter();
+
+  // Whole row/card opens the detail; Ctrl/Cmd+click opens it in a new tab
+  const openDetail = (id: string, e?: React.MouseEvent | React.KeyboardEvent) => {
+    const url = `/admin/requests/${id}`;
+    if (e && (e.ctrlKey || e.metaKey)) window.open(url, '_blank');
+    else router.push(url);
+  };
+  const onRowKey = (id: string) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') openDetail(id, e);
+  };
   const [requests, setRequests] = useState<Request[]>([]);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -253,7 +264,15 @@ export default function AdminRequestsPage() {
             {/* Mobile Card View */}
             <div className="lg:hidden space-y-3">
               {requests.map((req, i) => (
-                <div key={req.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <div
+                  key={req.id}
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`Buka permintaan ${req.request_code}`}
+                  onClick={(e) => openDetail(req.id, e)}
+                  onKeyDown={onRowKey(req.id)}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 cursor-pointer hover:border-primary-200 hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <p className="font-bold text-primary-700 text-sm">
@@ -266,17 +285,15 @@ export default function AdminRequestsPage() {
                   </div>
                   <p className="text-sm font-medium text-gray-900">{req.outlet?.name}</p>
                   <p className="text-xs text-gray-500">{req.requester_name} · {req.request_items?.length ?? 0} barang</p>
-                  <div className="flex gap-2 mt-3">
-                    <Link href={`/admin/requests/${req.id}`}>
-                      <button className="flex-1 py-1.5 px-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-medium text-gray-700 transition-colors flex items-center justify-center gap-1">
-                        <Edit className="h-3.5 w-3.5" /> Detail/Edit
-                      </button>
-                    </Link>
+                  <div className="flex justify-end mt-3">
                     <button
-                      onClick={() => setDeleteId(req.id)}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setDeleteId(req.id); }}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      aria-label={`Hapus ${req.request_code}`}
                       className="py-1.5 px-3 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium text-red-600 transition-colors flex items-center gap-1"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" /> Hapus
                     </button>
                   </div>
                 </div>
@@ -302,7 +319,15 @@ export default function AdminRequestsPage() {
                   </thead>
                   <tbody>
                     {requests.map((req, i) => (
-                      <tr key={req.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                      <tr
+                        key={req.id}
+                        role="link"
+                        tabIndex={0}
+                        aria-label={`Buka permintaan ${req.request_code}`}
+                        onClick={(e) => openDetail(req.id, e)}
+                        onKeyDown={onRowKey(req.id)}
+                        className="border-b border-gray-50 cursor-pointer hover:bg-primary-50/40 transition-colors focus:outline-none focus-visible:bg-primary-50/60"
+                      >
                         <td className="pl-4 pr-2 py-3 text-right text-gray-400 tabular-nums">{(page - 1) * limit + i + 1}</td>
                         <td className="px-4 py-3">
                           <span className="font-bold text-primary-700">{req.request_code}</span>
@@ -323,13 +348,12 @@ export default function AdminRequestsPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1 justify-end">
-                            <Link href={`/admin/requests/${req.id}`}>
-                              <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-600">
-                                <Edit className="h-4 w-4" />
-                              </button>
-                            </Link>
                             <button
-                              onClick={() => setDeleteId(req.id)}
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setDeleteId(req.id); }}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              aria-label={`Hapus ${req.request_code}`}
+                              title="Hapus"
                               className="p-1.5 hover:bg-red-100 rounded-lg transition-colors text-red-500"
                             >
                               <Trash2 className="h-4 w-4" />
