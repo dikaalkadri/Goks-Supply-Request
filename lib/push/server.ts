@@ -17,20 +17,34 @@ const NOTIFY_FIELDS = new Set([
   'item_deleted',
 ]);
 
-let configured: boolean | null = null;
+let configError: string | null | undefined; // undefined = not checked yet
 
-/** True when VAPID keys are set. Without them push is silently disabled. */
+/**
+ * Why push can't be sent (missing/invalid VAPID env vars), or null when it's
+ * configured. Values are trimmed because pasted env vars often carry
+ * whitespace or quotes.
+ */
+export function pushConfigError(): string | null {
+  if (configError !== undefined) return configError;
+  const clean = (v?: string) => v?.trim().replace(/^["']|["']$/g, '') ?? '';
+  const publicKey = clean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
+  const privateKey = clean(process.env.VAPID_PRIVATE_KEY);
+  const subject = clean(process.env.VAPID_SUBJECT) || 'https://goks-supply-request.vercel.app';
+
+  if (!publicKey) return (configError = 'NEXT_PUBLIC_VAPID_PUBLIC_KEY belum diisi.');
+  if (!privateKey) return (configError = 'VAPID_PRIVATE_KEY belum diisi.');
+  try {
+    webpush.setVapidDetails(subject, publicKey, privateKey);
+  } catch (e) {
+    return (configError = `Konfigurasi VAPID tidak valid: ${(e as Error).message}`);
+  }
+  return (configError = null);
+}
+
 export function isPushConfigured(): boolean {
-  if (configured !== null) return configured;
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-  if (!publicKey || !privateKey) return (configured = false);
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || 'https://goks-supply-request.vercel.app',
-    publicKey,
-    privateKey
-  );
-  return (configured = true);
+  const err = pushConfigError();
+  if (err) console.warn('push disabled:', err);
+  return !err;
 }
 
 function describe(c: Change): string {
@@ -83,37 +97,53 @@ export async function notifyRequestFollowers(
     }
     if (subs.size === 0) return;
 
-    const payload = JSON.stringify({
+    await sendToSubscriptions(supabase, [...subs.values()], {
       title: message.title,
       body: message.body,
       url: `/requests/${requestId}`,
       tag: `request-${requestId}`, // newer update replaces the older one on the device
     });
-
-    const expired: string[] = [];
-    const delivered: string[] = [];
-    await Promise.all(
-      [...subs.values()].map(async (s) => {
-        try {
-          await webpush.sendNotification(
-            { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-            payload,
-            { TTL: 60 * 60 * 24 }
-          );
-          delivered.push(s.id);
-        } catch (err: unknown) {
-          const status = (err as { statusCode?: number }).statusCode;
-          if (status === 404 || status === 410) expired.push(s.id);
-          else console.warn('push send failed:', status, (err as Error).message);
-        }
-      })
-    );
-
-    if (expired.length > 0) await supabase.from('push_subscriptions').delete().in('id', expired);
-    if (delivered.length > 0) {
-      await supabase.from('push_subscriptions').update({ last_sent_at: new Date().toISOString() }).in('id', delivered);
-    }
   } catch (e) {
     console.warn('push notify skipped:', e);
   }
+}
+
+type Subscription = { id: string; endpoint: string; p256dh: string; auth: string };
+export type SendResult = { id: string; ok: boolean; status?: number; error?: string; removed?: boolean };
+
+/**
+ * Send one payload to many subscriptions. Expired ones (404/410) are deleted,
+ * delivered ones get last_sent_at. Requires pushConfigError() === null.
+ */
+export async function sendToSubscriptions(
+  supabase: Awaited<ReturnType<typeof createAdminClient>>,
+  subs: Subscription[],
+  payload: { title: string; body: string; url: string; tag?: string }
+): Promise<SendResult[]> {
+  const body = JSON.stringify(payload);
+  const results = await Promise.all(
+    subs.map(async (s): Promise<SendResult> => {
+      try {
+        const res = await webpush.sendNotification(
+          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+          body,
+          { TTL: 60 * 60 * 24 }
+        );
+        return { id: s.id, ok: true, status: res.statusCode };
+      } catch (err: unknown) {
+        const e = err as { statusCode?: number; body?: string; message?: string };
+        const removed = e.statusCode === 404 || e.statusCode === 410;
+        if (!removed) console.warn('push send failed:', e.statusCode, e.body || e.message);
+        return { id: s.id, ok: false, status: e.statusCode, error: (e.body || e.message || '').slice(0, 200), removed };
+      }
+    })
+  );
+
+  const expired = results.filter((r) => r.removed).map((r) => r.id);
+  const delivered = results.filter((r) => r.ok).map((r) => r.id);
+  if (expired.length > 0) await supabase.from('push_subscriptions').delete().in('id', expired);
+  if (delivered.length > 0) {
+    await supabase.from('push_subscriptions').update({ last_sent_at: new Date().toISOString() }).in('id', delivered);
+  }
+  return results;
 }
