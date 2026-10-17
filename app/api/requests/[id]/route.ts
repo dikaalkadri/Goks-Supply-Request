@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, createAdminClient } from '@/lib/supabase/server';
 import { logRequestEvent } from '@/lib/utils/request-log';
+import { getOutletSession } from '@/lib/auth/outlet-session';
 
 export async function GET(
   _req: NextRequest,
@@ -22,6 +23,12 @@ export async function GET(
     .single();
 
   if (error || !data) {
+    return NextResponse.json({ error: 'Permintaan tidak ditemukan.' }, { status: 404 });
+  }
+
+  // Logged-in outlet can't open another outlet's request
+  const session = await getOutletSession();
+  if (session && data.outlet_id !== session.outlet_id) {
     return NextResponse.json({ error: 'Permintaan tidak ditemukan.' }, { status: 404 });
   }
 

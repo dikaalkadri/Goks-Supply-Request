@@ -13,6 +13,9 @@ import type { Outlet, Item, ItemFormData, CreateRequestResponse } from '@/types'
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils/cn';
+import { useOutletSession } from '@/lib/auth/use-outlet-session';
+import { followRequest } from '@/lib/push/client';
+import NotifyPrompt from '@/components/pwa/NotifyPrompt';
 
 interface ItemPhoto {
   file: File;
@@ -41,6 +44,12 @@ export default function HomePage() {
   // Optional photo per item, same index as selectedItems
   const [itemPhotos, setItemPhotos] = useState<(ItemPhoto | null)[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Logged-in outlet: outlet is fixed to the account (server enforces it too)
+  const { session: outletSession } = useOutletSession();
+
+  useEffect(() => {
+    if (outletSession) setOutletId(outletSession.outlet_id);
+  }, [outletSession]);
 
   useEffect(() => {
     async function load() {
@@ -232,6 +241,9 @@ export default function HomePage() {
       tokens[request_id] = edit_token;
       localStorage.setItem('request_tokens', JSON.stringify(tokens));
 
+      // If notifications are already on, follow this request (no-op otherwise)
+      void followRequest(request_id);
+
       setSuccess({ request_code, request_id, edit_token });
     } catch {
       toast.error('Terjadi kesalahan. Silakan coba lagi.');
@@ -256,6 +268,7 @@ export default function HomePage() {
             <div className="mb-6">
               <StatusBadge status="pending" />
             </div>
+            <NotifyPrompt />
             <div className="flex flex-col sm:flex-row gap-3">
               <Link href={`/requests/${success.request_id}`} className="flex-1">
                 <Button variant="primary" fullWidth size="lg">
@@ -268,7 +281,7 @@ export default function HomePage() {
                 size="lg"
                 onClick={() => {
                   setSuccess(null);
-                  setOutletId('');
+                  setOutletId(outletSession?.outlet_id ?? '');
                   setRequesterName('');
                   setNote('');
                   setSelectedItems([]);
@@ -313,7 +326,11 @@ export default function HomePage() {
                 value={outletId}
                 onChange={setOutletId}
                 error={errors.outlet}
+                disabled={Boolean(outletSession)}
               />
+              {outletSession && (
+                <p className="mt-1.5 text-xs text-gray-500">Outlet mengikuti akun yang sedang masuk.</p>
+              )}
             </div>
 
             {/* Nama Pengaju */}
@@ -340,7 +357,7 @@ export default function HomePage() {
                 <div key={index} className="border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      {item.is_manual ? '⚡ Barang Manual' : `Barang ${index + 1}`}
+                      {item.is_manual ? `Barang ${index + 1} · ⚡ Manual` : `Barang ${index + 1}`}
                     </span>
                     <button
                       type="button"

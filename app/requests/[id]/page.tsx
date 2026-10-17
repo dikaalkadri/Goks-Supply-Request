@@ -18,11 +18,13 @@ import toast from 'react-hot-toast';
 
 function ItemCard({
   item,
+  number,
   request,
   canEdit,
   onUpdate
 }: {
   item: RequestItem;
+  number: number;
   request: Request;
   canEdit: boolean;
   onUpdate: () => void;
@@ -214,7 +216,10 @@ function ItemCard({
                   </div>
                 </div>
               ) : (
-                <h3 className="font-bold text-gray-900">{item.item_name}</h3>
+                <h3 className="font-bold text-gray-900">
+                  <span className="text-gray-400 font-medium tabular-nums mr-1.5">{number}.</span>
+                  {item.item_name}
+                </h3>
               )}
 
               <div className="flex items-center gap-2">
@@ -260,7 +265,10 @@ function ItemCard({
             </div>
           ) : (
             <>
-              <h3 className="font-bold text-gray-900 break-words">{item.item_name}</h3>
+              <h3 className="font-bold text-gray-900 break-words">
+                <span className="text-gray-400 font-medium tabular-nums mr-1.5">{number}.</span>
+                {item.item_name}
+              </h3>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-sm text-gray-700 font-semibold">{item.qty} {item.unit}</span>
                 {item.is_manual && (
@@ -611,10 +619,11 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="flex flex-col gap-4">
-            {request.request_items?.map((item) => (
+            {request.request_items?.map((item, i) => (
               <ItemCard
                 key={item.id}
                 item={item}
+                number={i + 1}
                 request={request}
                 canEdit={canEdit}
                 onUpdate={fetchRequest}

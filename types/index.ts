@@ -11,6 +11,7 @@ export interface Outlet {
   id: string;
   name: string;
   is_active: boolean;
+  sort_order?: number | null; // undefined until migration_outlet_sort_order.sql is applied
   created_at: string;
 }
 

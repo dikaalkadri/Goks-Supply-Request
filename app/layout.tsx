@@ -1,11 +1,19 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'react-hot-toast';
+import PwaRegistrar from '@/components/pwa/PwaRegistrar';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Goks! Supply Request',
   description: 'Platform digital untuk mengajukan dan mengelola permintaan barang outlet secara mudah dan terpusat.',
   keywords: 'permintaan barang, supply request, outlet, manajemen barang',
+  applicationName: 'Goks! Supply Request',
+  appleWebApp: { capable: true, title: 'Goks! Supply', statusBarStyle: 'default' },
+  icons: { icon: '/icon-192.png', apple: '/apple-touch-icon.png' },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#6113a7',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-slate-50">
         {children}
+        <PwaRegistrar />
         <Toaster
           position="top-center"
           toastOptions={{

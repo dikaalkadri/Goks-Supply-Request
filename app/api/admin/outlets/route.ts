@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { fetchOutletsOrdered } from '@/lib/utils/outlet-order';
 
 export async function GET() {
   const supabase = await createAdminClient();
-  const { data, error } = await supabase.from('outlets').select('*').order('name');
+  const { data, error } = await fetchOutletsOrdered(supabase);
   if (error) return NextResponse.json({ error: 'Gagal memuat outlet.' }, { status: 500 });
   return NextResponse.json({ data });
 }
@@ -14,9 +15,19 @@ export async function POST(req: NextRequest) {
   if (!name?.trim()) return NextResponse.json({ error: 'Nama outlet wajib diisi.' }, { status: 400 });
 
   const supabase = await createAdminClient();
+
+  // New outlet goes to the end of the custom order (column may not exist yet)
+  const insertData: Record<string, unknown> = { name: name.trim() };
+  const { data: last, error: lastErr } = await supabase
+    .from('outlets')
+    .select('sort_order')
+    .order('sort_order', { ascending: false, nullsFirst: false })
+    .limit(1);
+  if (!lastErr) insertData.sort_order = (last?.[0]?.sort_order ?? 0) + 1;
+
   const { data, error } = await supabase
     .from('outlets')
-    .insert({ name: name.trim() })
+    .insert(insertData)
     .select()
     .single();
 

@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Edit, Trash2 } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, GripVertical } from 'lucide-react';
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, arrayMove, verticalListSortingStrategy, sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -9,6 +17,74 @@ import Modal from '@/components/ui/Modal';
 import { LoadingState } from '@/components/ui/States';
 import type { Outlet } from '@/types';
 import toast from 'react-hot-toast';
+
+// One draggable table row. Press-and-hold (or keyboard: Space + arrows) to move.
+function SortableOutletRow({
+  outlet,
+  index,
+  disabled,
+  onEdit,
+  onDelete,
+}: {
+  outlet: Outlet;
+  index: number;
+  disabled: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: outlet.id,
+    disabled,
+  });
+
+  return (
+    <tr
+      ref={setNodeRef}
+      // Vertical movement only
+      style={{ transform: CSS.Translate.toString(transform && { ...transform, x: 0 }), transition }}
+      className={`border-b border-gray-50 select-none ${
+        isDragging ? 'relative z-10 bg-primary-50 shadow-lg' : 'hover:bg-gray-50/50'
+      } ${disabled ? '' : 'cursor-grab active:cursor-grabbing'}`}
+      {...attributes}
+      {...listeners}
+      aria-label={`${outlet.name}, posisi ${index + 1}. Tekan dan tahan untuk memindahkan.`}
+    >
+      <td className="pl-3 pr-0 py-3 text-gray-300 w-6">
+        <GripVertical className="h-4 w-4" aria-hidden="true" />
+      </td>
+      <td className="pl-2 pr-2 py-3 text-right text-gray-400 tabular-nums">{index + 1}</td>
+      <td className="px-4 py-3 font-medium text-gray-900">
+        <span className="flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-gray-400" /> {outlet.name}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-center">
+        <span className={`text-xs px-2 py-1 rounded-full font-medium ${outlet.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+          {outlet.is_active ? 'Aktif' : 'Nonaktif'}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-right">
+        {/* Keep Enter/Space on these buttons from starting a keyboard drag of the row */}
+        <div className="flex items-center justify-end gap-1" onKeyDown={(e) => e.stopPropagation()}>
+          <button
+            onClick={onEdit}
+            className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+            title="Edit"
+          >
+            <Edit className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            title="Hapus"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 export default function AdminOutletsPage() {
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -26,6 +102,41 @@ export default function AdminOutletsPage() {
   // Form states
   const [name, setName] = useState('');
   const [isActive, setIsActive] = useState(true);
+
+  // Drag & drop reorder
+  const [savingOrder, setSavingOrder] = useState(false);
+  const sensors = useSensors(
+    // Hold ~200ms before dragging so taps, button clicks and page scroll still work
+    useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const previous = outlets;
+    const next = arrayMove(
+      outlets,
+      outlets.findIndex((o) => o.id === active.id),
+      outlets.findIndex((o) => o.id === over.id)
+    );
+    setOutlets(next); // optimistic
+    setSavingOrder(true);
+    try {
+      const res = await fetch('/api/admin/outlets/order', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: next.map((o) => o.id) }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Gagal menyimpan urutan.');
+      toast.success('Urutan outlet disimpan.');
+    } catch (err: unknown) {
+      setOutlets(previous);
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan urutan.');
+    } finally {
+      setSavingOrder(false);
+    }
+  };
 
   const fetchOutlets = async () => {
     setLoading(true);
@@ -112,7 +223,9 @@ export default function AdminOutletsPage() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Manajemen Outlet</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Kelola daftar cabang outlet.</p>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Kelola daftar cabang outlet. Tekan dan tahan baris, lalu geser untuk mengubah urutan.
+            </p>
           </div>
           <Button onClick={() => openModal()}><Plus className="h-4 w-4" /> Tambah Outlet</Button>
         </div>
@@ -122,9 +235,13 @@ export default function AdminOutletsPage() {
             <LoadingState />
           ) : (
             <div className="overflow-x-auto">
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={outlets.map((o) => o.id)} strategy={verticalListSortingStrategy}>
               <table className="w-full text-sm text-left">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="w-6" aria-label="Geser" />
+                    <th className="pl-2 pr-2 py-3 text-gray-500 font-semibold uppercase text-xs text-right w-12">No</th>
                     <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs">Nama Outlet</th>
                     <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs text-center">Status</th>
                     <th className="px-4 py-3 text-gray-500 font-semibold uppercase text-xs text-right">Aksi</th>
@@ -132,41 +249,23 @@ export default function AdminOutletsPage() {
                 </thead>
                 <tbody>
                   {outlets.length === 0 ? (
-                    <tr><td colSpan={3} className="p-8 text-center text-gray-500">Data tidak ditemukan.</td></tr>
+                    <tr><td colSpan={5} className="p-8 text-center text-gray-500">Data tidak ditemukan.</td></tr>
                   ) : (
-                    outlets.map(outlet => (
-                      <tr key={outlet.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                        <td className="px-4 py-3 font-medium text-gray-900 flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-gray-400" /> {outlet.name}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${outlet.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                            {outlet.is_active ? 'Aktif' : 'Nonaktif'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={() => openModal(outlet)}
-                              className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                              title="Edit"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteTarget(outlet)}
-                              className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Hapus"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                    outlets.map((outlet, i) => (
+                      <SortableOutletRow
+                        key={outlet.id}
+                        outlet={outlet}
+                        index={i}
+                        disabled={savingOrder}
+                        onEdit={() => openModal(outlet)}
+                        onDelete={() => setDeleteTarget(outlet)}
+                      />
                     ))
                   )}
                 </tbody>
               </table>
+              </SortableContext>
+              </DndContext>
             </div>
           )}
         </div>
