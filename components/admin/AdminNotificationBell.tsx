@@ -152,12 +152,41 @@ export default function AdminNotificationBell({
         >
           <Icon className={cn('h-4 w-4 flex-shrink-0', on ? 'text-primary-400' : 'text-gray-400')} />
           <span className="flex-1 text-left">Notifikasi</span>
-          <span className={cn(
-            'text-xs font-medium px-2 py-0.5 rounded-full',
-            on ? 'bg-primary-600/30 text-primary-300' : 'bg-white/10 text-gray-500'
-          )}>
-            {on ? 'Aktif' : state === 'denied' ? 'Diblokir' : 'Nonaktif'}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {on && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  showToast('Mengirim tes notifikasi...');
+                  try {
+                    const res = await fetch('/api/admin/push?test=1');
+                    const json = await res.json();
+                    if (json.test_results?.[0]?.ok) {
+                      showToast('Tes notifikasi terkirim!');
+                    } else if (json.config_error) {
+                      showToast(`Konfigurasi error: ${json.config_error}`);
+                    } else {
+                      showToast('Tes notifikasi selesai diproses.');
+                    }
+                  } catch {
+                    showToast('Gagal memicu tes notifikasi.');
+                  }
+                }}
+                className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/40 cursor-pointer transition-colors"
+                title="Kirim tes notifikasi ke perangkat ini"
+              >
+                Tes
+              </span>
+            )}
+            <span className={cn(
+              'text-xs font-medium px-2 py-0.5 rounded-full',
+              on ? 'bg-primary-600/30 text-primary-300' : 'bg-white/10 text-gray-500'
+            )}>
+              {on ? 'Aktif' : state === 'denied' ? 'Diblokir' : 'Nonaktif'}
+            </span>
+          </div>
         </button>
       ) : (
         <button
