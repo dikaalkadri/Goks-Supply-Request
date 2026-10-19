@@ -13,11 +13,12 @@ export async function GET(req: NextRequest) {
 
   const { data: subs, error } = await supabase
     .from('push_subscriptions')
-    .select('id, endpoint, p256dh, auth, created_at, last_sent_at, user_agent, outlet:outlets(name)')
+    .select('id, endpoint, p256dh, auth, created_at, last_sent_at, user_agent, is_admin, outlet:outlets(name)')
     .order('created_at', { ascending: false });
 
   const devices = (subs ?? []).map((s) => ({
     id: s.id,
+    is_admin: s.is_admin ?? false,
     outlet: (s.outlet as unknown as { name: string } | null)?.name ?? null,
     service: new URL(s.endpoint).hostname,
     created_at: s.created_at,
@@ -34,14 +35,17 @@ export async function GET(req: NextRequest) {
     devices,
   };
 
-  if (req.nextUrl.searchParams.get('test') !== '1' || configError || !subs?.length) {
+  const adminSubs = (subs ?? []).filter((s) => s.is_admin);
+  const targetSubs = adminSubs.length > 0 ? adminSubs : subs;
+
+  if (req.nextUrl.searchParams.get('test') !== '1' || configError || !targetSubs?.length) {
     return NextResponse.json(status, { headers: { 'Cache-Control': 'no-store' } });
   }
 
-  const results = await sendToSubscriptions(supabase, subs, {
-    title: 'Tes notifikasi',
-    body: 'Notifikasi Goks! Supply Request berfungsi di perangkat ini.',
-    url: '/requests',
+  const results = await sendToSubscriptions(supabase, targetSubs, {
+    title: '🔔 Tes Notifikasi Admin',
+    body: 'Notifikasi admin Goks! Supply Request berfungsi di perangkat ini.',
+    url: '/admin/requests',
   });
   return NextResponse.json({ ...status, test_results: results }, { headers: { 'Cache-Control': 'no-store' } });
 }
