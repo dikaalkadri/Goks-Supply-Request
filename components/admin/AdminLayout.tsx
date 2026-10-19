@@ -8,6 +8,7 @@ import {
   Settings, LogOut, Menu, X, ShoppingCart, BarChart2, Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import AdminNotificationBell from '@/components/admin/AdminNotificationBell';
 
 const navItems = [
   { href: '/admin/dashboard',    label: 'Dashboard',          icon: LayoutDashboard },
@@ -69,7 +70,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-white/10">
+        <div className="p-3 border-t border-white/10 space-y-0.5">
+          <AdminNotificationBell variant="sidebar" />
           <button
             onClick={handleLogout}
             disabled={loggingOut}
@@ -81,7 +83,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <Link
             href="/"
             target="_blank"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-300 w-full transition-all mt-0.5"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-300 w-full transition-all"
           >
             <ShoppingCart className="h-4 w-4" />
             Lihat Halaman Publik
@@ -98,9 +100,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </div>
             <span className="font-bold text-sm">Admin Panel</span>
           </div>
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1.5 hover:bg-white/10 rounded-lg">
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-1">
+            <AdminNotificationBell variant="icon" />
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1.5 hover:bg-white/10 rounded-lg">
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
 
         {mobileOpen && (

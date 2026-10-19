@@ -288,10 +288,33 @@ export default function RequestsPage() {
                       <p className="text-sm font-semibold text-gray-900 mt-1 truncate">
                         {session ? req.requester_name : (req.outlet?.name ?? '-')}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {!session && <>oleh {req.requester_name} · </>}
-                        {req.request_items?.length ?? 0} barang
-                      </p>
+                      {/* Requester line (public mode only) */}
+                      {!session && (
+                        <p className="text-xs text-gray-500 mt-0.5">oleh {req.requester_name}</p>
+                      )}
+                      {/* Item summary pills — always shown */}
+                      {(() => {
+                        const items     = req.request_items ?? [];
+                        const total     = items.length;
+                        const warehouse = items.filter((it) => it.purchase_type === 'warehouse').length;
+                        const pettyCash = items.filter((it) => it.purchase_type === 'petty_cash').length;
+                        const pending   = items.filter((it) => it.purchase_type == null).length;
+                        const pills: { label: string; cls: string }[] = [
+                          { label: `📦 ${total} item${total !== 1 ? 's' : ''}`, cls: 'bg-gray-100 text-gray-600' },
+                          ...(pending   > 0 ? [{ label: `⏳ ${pending} Pending`,      cls: 'bg-orange-50 text-orange-600' }] : []),
+                          ...(warehouse > 0 ? [{ label: `🏪 ${warehouse} Warehouse`,  cls: 'bg-blue-50 text-blue-700' }]    : []),
+                          ...(pettyCash > 0 ? [{ label: `💵 ${pettyCash} Petty Cash`, cls: 'bg-amber-50 text-amber-700' }]  : []),
+                        ];
+                        return (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {pills.map((p) => (
+                              <span key={p.label} className={`inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full ${p.cls}`}>
+                                {p.label}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <StatusBadge status={req.status} />
                     <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-primary-500 transition-colors flex-shrink-0 self-center" />

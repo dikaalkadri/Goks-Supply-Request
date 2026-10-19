@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { startOfDayWIB, endOfDayWIB } from '@/lib/utils/date-range';
 import { generateRequestCode } from '@/lib/utils/request-code';
 import { sanitizeSearch, mediaFilterSelect, applyMediaFilters } from '@/lib/utils/request-query';
 import { logRequestEvent } from '@/lib/utils/request-log';
 import { getOutletSession } from '@/lib/auth/outlet-session';
+import { notifyNewRequest } from '@/lib/push/server';
 import type { ItemFormData } from '@/types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -113,6 +115,19 @@ export async function POST(req: NextRequest) {
       request_code: request.request_code,
       action: 'created',
       actor: 'user',
+    });
+
+    // Notify admin devices — fire-and-forget after response is sent
+    const outletId = outlet_id;
+    const reqId    = request.id;
+    const reqCode  = request.request_code;
+    after(async () => {
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const sb = await createAdminClient();
+        const { data: outlet } = await sb.from('outlets').select('name').eq('id', outletId).single();
+        notifyNewRequest(reqCode, reqId, outlet?.name ?? 'Outlet');
+      } catch { /* ignore */ }
     });
 
     return NextResponse.json({

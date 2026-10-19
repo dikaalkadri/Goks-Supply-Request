@@ -108,6 +108,41 @@ export async function notifyRequestFollowers(
   }
 }
 
+/**
+ * Push a notification to every device subscribed as admin (is_admin = true).
+ * Called when a new request is created by an outlet.
+ * Never throws.
+ */
+export async function notifyAdmins(
+  message: { title: string; body: string; url: string }
+): Promise<void> {
+  if (!isPushConfigured()) return;
+  try {
+    const supabase = await createAdminClient();
+    const { data: subs, error } = await supabase
+      .from('push_subscriptions')
+      .select('id, endpoint, p256dh, auth')
+      .eq('is_admin', true);
+    if (error || !subs?.length) return;
+    await sendToSubscriptions(supabase, subs, { ...message, tag: 'new-request' });
+  } catch (e) {
+    console.warn('notifyAdmins skipped:', e);
+  }
+}
+
+/** Convenience: notify all admin devices that a new supply request came in. */
+export function notifyNewRequest(
+  requestCode: string,
+  requestId: string,
+  outletName: string
+) {
+  notifyAdmins({
+    title: `Permintaan baru: ${requestCode}`,
+    body: `${outletName} mengajukan permintaan barang.`,
+    url: `/admin/requests/${requestId}`,
+  });
+}
+
 type Subscription = { id: string; endpoint: string; p256dh: string; auth: string };
 export type SendResult = { id: string; ok: boolean; status?: number; error?: string; removed?: boolean };
 
