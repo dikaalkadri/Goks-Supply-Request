@@ -15,12 +15,18 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   rejected:  { label: '🔴 Ditolak',   cls: 'bg-red-100 text-red-700'      },
 };
 
+const PURCHASE_TYPE_LABEL: Record<string, { label: string; cls: string }> = {
+  warehouse:  { label: '🏭 Warehouse',  cls: 'bg-blue-50 text-blue-700 border border-blue-200' },
+  petty_cash: { label: '💵 Petty Cash', cls: 'bg-purple-50 text-purple-700 border border-purple-200' },
+};
+
 interface DistributionRow {
   id: string;
   item_name: string;
   qty: number;
   unit: string;
   status: string;
+  purchase_type: 'warehouse' | 'petty_cash' | null;
   delivered_at: string | null;
   created_at: string;
   request: {
@@ -36,6 +42,7 @@ export default function DistributionPage() {
   const [itemId,   setItemId]   = useState('');
   const [itemSearch, setItemSearch] = useState('');
   const [showItemDropdown, setShowItemDropdown] = useState(false);
+  const [purchaseType, setPurchaseType] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo,   setDateTo]   = useState('');
   const [rows,     setRows]     = useState<DistributionRow[]>([]);
@@ -72,8 +79,9 @@ export default function DistributionPage() {
     setLoading(true);
     try {
       const p = new URLSearchParams({ item_id: itemId, page: String(page), limit: String(limit) });
-      if (dateFrom) p.set('date_from', dateFrom);
-      if (dateTo)   p.set('date_to', dateTo);
+      if (purchaseType) p.set('purchase_type', purchaseType);
+      if (dateFrom)     p.set('date_from', dateFrom);
+      if (dateTo)       p.set('date_to', dateTo);
       const res  = await fetch(`/api/admin/distribution?${p}`);
       const data = await res.json();
       setRows(data.data ?? []);
@@ -81,19 +89,20 @@ export default function DistributionPage() {
     } finally {
       setLoading(false);
     }
-  }, [itemId, dateFrom, dateTo, page]);
+  }, [itemId, purchaseType, dateFrom, dateTo, page]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleReset = () => {
     setItemId('');
     setItemSearch('');
+    setPurchaseType('');
     setDateFrom('');
     setDateTo('');
     setPage(1);
   };
 
-  const hasFilter = itemId || dateFrom || dateTo;
+  const hasFilter = itemId || purchaseType || dateFrom || dateTo;
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -161,6 +170,20 @@ export default function DistributionPage() {
             </div>
           </div>
 
+          {/* Filter Tipe Pengiriman (Warehouse / Petty Cash) */}
+          <div className="min-w-[170px]">
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Tipe Pengiriman</label>
+            <select
+              value={purchaseType}
+              onChange={(e) => { setPurchaseType(e.target.value); setPage(1); }}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+            >
+              <option value="">Semua Tipe</option>
+              <option value="warehouse">🏭 Warehouse</option>
+              <option value="petty_cash">💵 Petty Cash</option>
+            </select>
+          </div>
+
           {/* Date Range */}
           <div className="min-w-[220px]">
             <label className="block text-xs font-semibold text-gray-500 mb-1.5">Periode</label>
@@ -192,6 +215,11 @@ export default function DistributionPage() {
             {selectedItem && (
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-600">
                 {selectedItem.name} · {selectedItem.unit}
+              </div>
+            )}
+            {purchaseType && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 rounded-full text-xs font-semibold text-purple-700">
+                {PURCHASE_TYPE_LABEL[purchaseType]?.label ?? purchaseType}
               </div>
             )}
             {/* Total qty */}
@@ -228,11 +256,22 @@ export default function DistributionPage() {
                       </p>
                       <p className="text-xs text-gray-500">{row.request?.request_code}</p>
                     </div>
-                    {row.status && STATUS_LABEL[row.status] && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_LABEL[row.status].cls}`}>
-                        {STATUS_LABEL[row.status].label}
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      {row.status && STATUS_LABEL[row.status] && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_LABEL[row.status].cls}`}>
+                          {STATUS_LABEL[row.status].label}
+                        </span>
+                      )}
+                      {row.purchase_type && PURCHASE_TYPE_LABEL[row.purchase_type] ? (
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${PURCHASE_TYPE_LABEL[row.purchase_type].cls}`}>
+                          {PURCHASE_TYPE_LABEL[row.purchase_type].label}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
+                          -
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm text-gray-700 font-medium">{row.item_name}</p>
                   <div className="flex items-center justify-between mt-2">
@@ -259,6 +298,7 @@ export default function DistributionPage() {
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Outlet</th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jumlah</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Satuan</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipe</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tgl Pengiriman</th>
                     </tr>
@@ -278,6 +318,17 @@ export default function DistributionPage() {
                         <td className="px-4 py-3 text-gray-700 font-medium">{row.request?.outlet?.name ?? '-'}</td>
                         <td className="px-4 py-3 text-right font-bold text-gray-900">{row.qty}</td>
                         <td className="px-4 py-3 text-gray-500">{row.unit}</td>
+                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                          {row.purchase_type && PURCHASE_TYPE_LABEL[row.purchase_type] ? (
+                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${PURCHASE_TYPE_LABEL[row.purchase_type].cls}`}>
+                              {PURCHASE_TYPE_LABEL[row.purchase_type].label}
+                            </span>
+                          ) : (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-400">
+                              -
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-center">
                           {row.status && STATUS_LABEL[row.status] ? (
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_LABEL[row.status].cls}`}>

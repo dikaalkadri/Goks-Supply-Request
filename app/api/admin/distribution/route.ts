@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
   const itemId   = searchParams.get('item_id') ?? '';
   const dateFrom = searchParams.get('date_from') ?? '';
   const dateTo   = searchParams.get('date_to') ?? '';
+  const purchaseType = searchParams.get('purchase_type') ?? '';
   const page     = parseInt(searchParams.get('page') ?? '1');
   const limit    = Math.min(parseInt(searchParams.get('limit') ?? '50'), 200);
   const offset   = (page - 1) * limit;
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest) {
       qty,
       unit,
       status,
+      purchase_type,
       delivered_at,
       created_at,
       request:requests!request_id(
@@ -36,6 +38,10 @@ export async function GET(req: NextRequest) {
     `, { count: 'exact' })
     .eq('item_id', itemId)
     .not('request', 'is', null);
+
+  if (purchaseType) {
+    query = query.eq('purchase_type', purchaseType);
+  }
 
   const fromTs = startOfDayWIB(dateFrom);
   const toTs   = endOfDayWIB(dateTo);
