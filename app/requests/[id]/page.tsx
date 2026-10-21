@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Package, AlertCircle, Receipt,
   Camera, ExternalLink, UploadCloud, Edit2, Trash2, Plus, X, Search, Check
@@ -14,6 +15,7 @@ import Input from '@/components/ui/Input';
 import type { Request, RequestItem, Item } from '@/types';
 import { formatDateTime } from '@/lib/utils/format';
 import { compressConditionPhoto, compressReceipt, validateImageFile } from '@/lib/utils/image-compress';
+import { useOutletSession } from '@/lib/auth/use-outlet-session';
 import toast from 'react-hot-toast';
 
 function ItemCard({
@@ -423,9 +425,18 @@ function ItemCard({
 
 export default function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
+  const { session, loading: sessionLoading } = useOutletSession();
   const [request, setRequest] = useState<Request | null>(null);
   const [masterItems, setMasterItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Redirect to login if user is not authenticated
+  useEffect(() => {
+    if (!sessionLoading && !session) {
+      router.replace('/');
+    }
+  }, [session, sessionLoading, router]);
 
   // Note edit state
   const [isEditingNote, setIsEditingNote] = useState(false);
@@ -528,6 +539,17 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
     i.name.toLowerCase().includes(addSearch.toLowerCase()) ||
     (i.category && i.category.toLowerCase().includes(addSearch.toLowerCase()))
   );
+
+  if (sessionLoading || (!session && typeof window !== 'undefined')) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-500">Memeriksa sesi...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

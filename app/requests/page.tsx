@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, Filter, ChevronRight, Package, SlidersHorizontal, X } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import PublicNav from '@/components/layout/PublicNav';
@@ -65,7 +66,15 @@ export default function RequestsPage() {
   const [myIds, setMyIds] = useState<string[]>([]);
   const [storageReady, setStorageReady] = useState(false);
   // Logged-in outlet: the server scopes the list to that outlet
+  const router = useRouter();
   const { loading: sessionLoading, session } = useOutletSession();
+
+  // Redirect to login if user is not authenticated
+  useEffect(() => {
+    if (!sessionLoading && !session) {
+      router.replace('/');
+    }
+  }, [session, sessionLoading, router]);
 
   // Once the session is known, a logged-in outlet starts on the current month
   useEffect(() => {
@@ -135,6 +144,17 @@ export default function RequestsPage() {
     setDateTo(defaultTo);
     setPage(1);
   };
+
+  if (sessionLoading || (!session && typeof window !== 'undefined')) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-500">Memeriksa sesi...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">

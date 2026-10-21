@@ -1,18 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Store } from 'lucide-react';
-import PublicNav from '@/components/layout/PublicNav';
+import { useRouter } from 'next/navigation';
+import { Store, Shield } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { resetOutletSessionCache } from '@/lib/auth/use-outlet-session';
+import { useOutletSession, resetOutletSessionCache } from '@/lib/auth/use-outlet-session';
 
 export default function OutletLoginPage() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { session, loading: sessionLoading } = useOutletSession();
+
+  // If already logged in, redirect to requests
+  useEffect(() => {
+    if (!sessionLoading && session) {
+      router.replace('/requests');
+    }
+  }, [session, sessionLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +44,6 @@ export default function OutletLoginPage() {
         return;
       }
       resetOutletSessionCache();
-      // Full navigation so every component re-reads the new session
       window.location.href = '/requests';
     } catch {
       setError('Terjadi kesalahan. Silakan coba lagi.');
@@ -43,22 +51,53 @@ export default function OutletLoginPage() {
     }
   };
 
+  if (sessionLoading || session) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-500">Memeriksa sesi...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PublicNav />
-      <main className="max-w-sm mx-auto px-4 py-12">
-        <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <Store className="h-7 w-7 text-primary-700" />
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
+      {/* Top Navbar Simple */}
+      <header className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+            </div>
+            <span className="font-bold text-gray-900 text-sm">Goks! Supply Request</span>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Masuk Outlet</h1>
-          <p className="text-sm text-gray-500 mt-1">Lihat dan kelola permintaan barang outlet Anda.</p>
+          <Link
+            href="/admin"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors border border-gray-200"
+          >
+            <Shield className="h-3.5 w-3.5" />
+            <span>Admin PIN</span>
+          </Link>
+        </div>
+      </header>
+
+      {/* Main Login Form */}
+      <main className="max-w-sm w-full mx-auto px-4 py-12 flex-1 flex flex-col justify-center">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm border border-primary-200/60">
+            <Store className="h-8 w-8 text-primary-700" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Masuk Outlet</h1>
+          <p className="text-sm text-gray-500 mt-1">Silakan masuk menggunakan akun outlet Anda.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
           <Input
             id="username"
-            label="Username"
+            label="Username Outlet"
             placeholder="Contoh: TAPLAU"
             autoComplete="username"
             autoFocus
@@ -69,6 +108,7 @@ export default function OutletLoginPage() {
             id="password"
             type="password"
             label="Password"
+            placeholder="••••••••"
             autoComplete="current-password"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError(''); }}
@@ -76,17 +116,16 @@ export default function OutletLoginPage() {
 
           {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
 
-          <Button type="submit" variant="primary" fullWidth size="lg" loading={loading}>
-            {loading ? 'Memeriksa...' : 'Masuk'}
+          <Button type="submit" variant="primary" fullWidth size="lg" loading={loading} className="shadow-lg shadow-primary-200">
+            {loading ? 'Memeriksa...' : 'Masuk ke Dashboard'}
           </Button>
         </form>
-
-        <p className="text-center text-xs text-gray-500 mt-4">
-          Tanpa login Anda tetap bisa{' '}
-          <Link href="/" className="text-primary-700 font-medium hover:underline">membuat permintaan</Link>
-          {' '}seperti biasa.
-        </p>
       </main>
+
+      {/* Footer */}
+      <footer className="py-4 text-center text-xs text-gray-400">
+        &copy; {new Date().getFullYear()} Goks! Supply Request
+      </footer>
     </div>
   );
 }

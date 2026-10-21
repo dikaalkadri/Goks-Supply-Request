@@ -25,7 +25,7 @@ export default function PublicNav() {
       <div className="max-w-5xl mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href={session ? '/requests' : '/'} className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center overflow-hidden">
               <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
@@ -42,10 +42,10 @@ export default function PublicNav() {
               <>
                 <NotificationBell />
                 <Link
-                  href="/login"
+                  href="/"
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ml-1',
-                    pathname === '/login'
+                    pathname === '/'
                       ? 'bg-primary-50 text-primary-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   )}

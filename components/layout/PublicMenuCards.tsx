@@ -6,8 +6,8 @@ import { ShoppingCart, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const menus = [
-  { href: '/',         label: 'Permintaan Barang', icon: ShoppingCart },
-  { href: '/requests', label: 'Daftar Permintaan', icon: ClipboardList },
+  { href: '/requests/new', label: 'Permintaan Barang', icon: ShoppingCart },
+  { href: '/requests',     label: 'Daftar Permintaan', icon: ClipboardList },
 ];
 
 /**
