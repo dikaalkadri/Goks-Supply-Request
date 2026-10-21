@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { BarChart2, CalendarRange, X, ChevronLeft, ChevronRight, Search, RotateCcw } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { BarChart2, CalendarRange, X, ChevronLeft, ChevronRight, Search, RotateCcw, ExternalLink } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminPage from '@/components/admin/AdminPage';
 import { LoadingState, EmptyState } from '@/components/ui/States';
@@ -38,6 +40,7 @@ interface DistributionRow {
 }
 
 export default function DistributionPage() {
+  const router = useRouter();
   const [items,    setItems]    = useState<Item[]>([]);
   const [itemId,   setItemId]   = useState('');
   const [itemSearch, setItemSearch] = useState('');
@@ -246,43 +249,55 @@ export default function DistributionPage() {
           <>
             {/* Mobile Cards */}
             <div className="lg:hidden space-y-3">
-              {rows.map((row, i) => (
-                <div key={row.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-bold text-gray-900 text-sm">
-                        <span className="text-gray-400 font-medium tabular-nums mr-1.5">{(page - 1) * limit + i + 1}.</span>
-                        {row.request?.outlet?.name ?? '-'}
-                      </p>
-                      <p className="text-xs text-gray-500">{row.request?.request_code}</p>
+              {rows.map((row, i) => {
+                const targetUrl = row.request?.id ? `/admin/requests/${row.request.id}` : null;
+                const CardContent = (
+                  <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-4 transition-all ${targetUrl ? 'hover:border-primary-300 hover:shadow-md cursor-pointer active:scale-[0.99]' : ''}`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                          <span className="text-gray-400 font-medium tabular-nums mr-0.5">{(page - 1) * limit + i + 1}.</span>
+                          <span>{row.request?.outlet?.name ?? '-'}</span>
+                          {targetUrl && <ExternalLink className="h-3.5 w-3.5 text-gray-400 inline" />}
+                        </p>
+                        <p className="text-xs font-semibold text-primary-700">{row.request?.request_code}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        {row.status && STATUS_LABEL[row.status] && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_LABEL[row.status].cls}`}>
+                            {STATUS_LABEL[row.status].label}
+                          </span>
+                        )}
+                        {row.purchase_type && PURCHASE_TYPE_LABEL[row.purchase_type] ? (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${PURCHASE_TYPE_LABEL[row.purchase_type].cls}`}>
+                            {PURCHASE_TYPE_LABEL[row.purchase_type].label}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
+                            -
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      {row.status && STATUS_LABEL[row.status] && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_LABEL[row.status].cls}`}>
-                          {STATUS_LABEL[row.status].label}
-                        </span>
-                      )}
-                      {row.purchase_type && PURCHASE_TYPE_LABEL[row.purchase_type] ? (
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${PURCHASE_TYPE_LABEL[row.purchase_type].cls}`}>
-                          {PURCHASE_TYPE_LABEL[row.purchase_type].label}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
-                          -
-                        </span>
-                      )}
+                    <p className="text-sm text-gray-700 font-medium">{row.item_name}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-gray-500">{fmtDate(row.request?.created_at ?? row.created_at)}</p>
+                      <p className="font-bold text-gray-900">{row.qty} <span className="font-normal text-gray-500 text-xs">{row.unit}</span></p>
                     </div>
+                    {row.delivered_at && (
+                      <p className="text-xs text-gray-400 mt-1">Terkirim: {fmtDate(row.delivered_at)}</p>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-700 font-medium">{row.item_name}</p>
-                  <div className="flex items-center justify-between mt-2">
-                    <p className="text-xs text-gray-500">{fmtDate(row.request?.created_at ?? row.created_at)}</p>
-                    <p className="font-bold text-gray-900">{row.qty} <span className="font-normal text-gray-500 text-xs">{row.unit}</span></p>
-                  </div>
-                  {row.delivered_at && (
-                    <p className="text-xs text-gray-400 mt-1">Terkirim: {fmtDate(row.delivered_at)}</p>
-                  )}
-                </div>
-              ))}
+                );
+
+                return targetUrl ? (
+                  <Link key={row.id} href={targetUrl} className="block no-underline">
+                    {CardContent}
+                  </Link>
+                ) : (
+                  <div key={row.id}>{CardContent}</div>
+                );
+              })}
             </div>
 
             {/* Desktop Table */}
@@ -301,51 +316,75 @@ export default function DistributionPage() {
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipe</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tgl Pengiriman</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-16">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((row, i) => (
-                      <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
-                        <td className="pl-4 pr-2 py-3 text-right text-gray-400 tabular-nums">{(page - 1) * limit + i + 1}</td>
-                        <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
-                          {fmtDate(row.request?.created_at ?? row.created_at)}<br />
-                          <span className="text-gray-400">{fmtTime(row.request?.created_at ?? row.created_at)}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-bold text-primary-700 text-xs">{row.request?.request_code ?? '-'}</span>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-gray-900">{row.item_name}</td>
-                        <td className="px-4 py-3 text-gray-700 font-medium">{row.request?.outlet?.name ?? '-'}</td>
-                        <td className="px-4 py-3 text-right font-bold text-gray-900">{row.qty}</td>
-                        <td className="px-4 py-3 text-gray-500">{row.unit}</td>
-                        <td className="px-4 py-3 text-center whitespace-nowrap">
-                          {row.purchase_type && PURCHASE_TYPE_LABEL[row.purchase_type] ? (
-                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${PURCHASE_TYPE_LABEL[row.purchase_type].cls}`}>
-                              {PURCHASE_TYPE_LABEL[row.purchase_type].label}
+                    {rows.map((row, i) => {
+                      const targetUrl = row.request?.id ? `/admin/requests/${row.request.id}` : null;
+                      return (
+                        <tr
+                          key={row.id}
+                          onClick={() => { if (targetUrl) router.push(targetUrl); }}
+                          className={`border-b border-gray-50 transition-colors ${
+                            targetUrl ? 'hover:bg-primary-50/50 cursor-pointer' : 'hover:bg-gray-50/60'
+                          }`}
+                        >
+                          <td className="pl-4 pr-2 py-3 text-right text-gray-400 tabular-nums">{(page - 1) * limit + i + 1}</td>
+                          <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
+                            {fmtDate(row.request?.created_at ?? row.created_at)}<br />
+                            <span className="text-gray-400">{fmtTime(row.request?.created_at ?? row.created_at)}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-bold text-primary-700 text-xs hover:underline inline-flex items-center gap-1">
+                              {row.request?.request_code ?? '-'}
                             </span>
-                          ) : (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-400">
-                              -
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {row.status && STATUS_LABEL[row.status] ? (
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_LABEL[row.status].cls}`}>
-                              {STATUS_LABEL[row.status].label}
-                            </span>
-                          ) : '-'}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
-                          {row.delivered_at ? (
-                            <><span className="font-medium">{fmtDate(row.delivered_at)}</span><br />
-                            <span className="text-gray-400">{fmtTime(row.delivered_at)}</span></>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-gray-900">{row.item_name}</td>
+                          <td className="px-4 py-3 text-gray-700 font-medium">{row.request?.outlet?.name ?? '-'}</td>
+                          <td className="px-4 py-3 text-right font-bold text-gray-900">{row.qty}</td>
+                          <td className="px-4 py-3 text-gray-500">{row.unit}</td>
+                          <td className="px-4 py-3 text-center whitespace-nowrap">
+                            {row.purchase_type && PURCHASE_TYPE_LABEL[row.purchase_type] ? (
+                              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${PURCHASE_TYPE_LABEL[row.purchase_type].cls}`}>
+                                {PURCHASE_TYPE_LABEL[row.purchase_type].label}
+                              </span>
+                            ) : (
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-400">
+                                -
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {row.status && STATUS_LABEL[row.status] ? (
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_LABEL[row.status].cls}`}>
+                                {STATUS_LABEL[row.status].label}
+                              </span>
+                            ) : '-'}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
+                            {row.delivered_at ? (
+                              <><span className="font-medium">{fmtDate(row.delivered_at)}</span><br />
+                              <span className="text-gray-400">{fmtTime(row.delivered_at)}</span></>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {targetUrl && (
+                              <Link
+                                href={targetUrl}
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center justify-center p-1.5 rounded-lg text-primary-600 hover:text-primary-700 hover:bg-primary-50 transition-colors"
+                                title="Buka detail permintaan"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Link>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
