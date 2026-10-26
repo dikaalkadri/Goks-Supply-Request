@@ -498,23 +498,33 @@ export default function PurchaseHistoryPage() {
             </div>
 
             {/* Pagination */}
-            {total > limit && (
-              <div className="flex items-center justify-center gap-3 mt-4">
-                <button
-                  disabled={page === 1}
-                  onClick={() => setPage(p => p - 1)}
-                  className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  ← Sebelumnya
-                </button>
-                <span className="text-sm text-gray-500">Hal {page} / {Math.ceil(total / limit)}</span>
-                <button
-                  disabled={page >= Math.ceil(total / limit)}
-                  onClick={() => setPage(p => p + 1)}
-                  className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Selanjutnya →
-                </button>
+            {total > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 pt-3 border-t border-gray-100">
+                <div className="text-xs sm:text-sm text-gray-500 font-medium">
+                  Menampilkan <span className="font-semibold text-gray-700">{(page - 1) * limit + 1}</span>–<span className="font-semibold text-gray-700">{Math.min(page * limit, total)}</span> dari <span className="font-semibold text-gray-700">{total}</span> item
+                </div>
+
+                {total > limit && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={page <= 1}
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      className="px-3.5 py-1.5 rounded-xl border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      ← Sebelumnya
+                    </button>
+                    <span className="px-2 text-xs sm:text-sm text-gray-500 font-medium">
+                      Halaman <span className="font-semibold text-gray-700">{page}</span> dari <span className="font-semibold text-gray-700">{Math.ceil(total / limit)}</span>
+                    </span>
+                    <button
+                      disabled={page >= Math.ceil(total / limit)}
+                      onClick={() => setPage(p => Math.min(Math.ceil(total / limit), p + 1))}
+                      className="px-3.5 py-1.5 rounded-xl border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Selanjutnya →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </>

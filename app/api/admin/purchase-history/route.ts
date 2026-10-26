@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { startOfDayWIB, endOfDayWIB, dateWIB } from '@/lib/utils/date-range';
+import { dateWIB } from '@/lib/utils/date-range';
 
 export async function GET(req: NextRequest) {
   const supabase = await createAdminClient();
   const { searchParams } = new URL(req.url);
 
-  const outletId    = searchParams.get('outlet_id')    ?? '';
-  const dateFrom    = searchParams.get('date_from')    ?? '';
-  const dateTo      = searchParams.get('date_to')      ?? '';
+  const outletId     = searchParams.get('outlet_id')     ?? '';
+  const dateFrom     = searchParams.get('date_from')     ?? '';
+  const dateTo       = searchParams.get('date_to')       ?? '';
   const purchaseType = searchParams.get('purchase_type') ?? '';
-  const itemStatus  = searchParams.get('item_status')  ?? '';
-  const itemSource  = searchParams.get('item_source')  ?? ''; // 'master' | 'manual'
-  const search      = searchParams.get('search')       ?? '';
-  const page        = parseInt(searchParams.get('page') ?? '1');
-  const limit       = Math.min(parseInt(searchParams.get('limit') ?? '50'), 200);
-  const offset      = (page - 1) * limit;
+  const itemStatus   = searchParams.get('item_status')   ?? '';
+  const itemSource   = searchParams.get('item_source')   ?? ''; // 'master' | 'manual'
+  const search       = searchParams.get('search')        ?? '';
+  const page         = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
+  const limit        = Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10));
 
+  // Ambil data item dari DB dengan filter tingkat kolom yang bisa dilakukan di SQL
   let query: any = supabase
     .from('request_items')
     .select(`
@@ -36,47 +36,39 @@ export async function GET(req: NextRequest) {
         request_code,
         status,
         created_at,
+        outlet_id,
         outlet:outlets!outlet_id(id, name)
       )
-    `, { count: 'exact' })
+    `)
     .not('request', 'is', null);
 
-  // Filter outlet
-  if (outletId) {
-    query = query.eq('request.outlet_id', outletId);
-  }
-
-  // Filter purchase type
   if (purchaseType) {
     query = query.eq('purchase_type', purchaseType);
   }
 
-  // Filter item status
   if (itemStatus) {
     query = query.eq('status', itemStatus);
   }
 
-  // Filter item source: master = item_id is not null, manual = item_id is null
   if (itemSource === 'master') {
     query = query.not('item_id', 'is', null);
   } else if (itemSource === 'manual') {
     query = query.is('item_id', null);
   }
 
-  query = query
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
+  // Urutkan berdasarkan tanggal dibuat terbaru
+  query = query.order('created_at', { ascending: false });
 
-  const { data, error, count } = await query;
+  const { data, error } = await query;
 
   if (error) {
     console.error('Purchase history query error:', error);
     return NextResponse.json({ error: 'Gagal memuat data riwayat pembelian.' }, { status: 500 });
   }
 
-  // Post-filter by date on request.created_at and search (join filter workaround)
   let rows = (data ?? []) as any[];
 
+  // 1. Filter Tanggal Permintaan (berdasarkan WIB)
   if (dateFrom || dateTo) {
     rows = rows.filter((row) => {
       const reqDate = row.request?.created_at;
@@ -88,10 +80,12 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // 2. Filter Outlet
   if (outletId) {
-    rows = rows.filter((row) => row.request?.outlet?.id === outletId);
+    rows = rows.filter((row) => row.request?.outlet_id === outletId || row.request?.outlet?.id === outletId);
   }
 
+  // 3. Filter Pencarian Teks
   if (search.trim()) {
     const q = search.trim().toLowerCase();
     rows = rows.filter((row) =>
@@ -101,5 +95,18 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ data: rows, total: count ?? rows.length, page, limit });
+  // Total data setelah SEMUA filter diaplikasikan secara akurat
+  const total = rows.length;
+
+  // Pagination diaplikasikan SETELAH filter
+  const offset = (page - 1) * limit;
+  const paginatedRows = rows.slice(offset, offset + limit);
+
+  return NextResponse.json({
+    data: paginatedRows,
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  });
 }
