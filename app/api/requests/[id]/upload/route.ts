@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logRequestEvent } from '@/lib/utils/request-log';
 
 export async function POST(
   req: NextRequest,
@@ -34,6 +35,8 @@ export async function POST(
     // For receipt upload, check if delivered_at is already set
     let updatePayload: any = type === 'item_photo' ? { photo_path: storage_path } : { receipt_path: storage_path };
 
+    let itemWasAutoCompleted = false;
+
     if (type === 'item_receipt') {
       const { data: itemData, error: itemErr } = await supabase
         .from('request_items')
@@ -49,6 +52,7 @@ export async function POST(
         // Auto-complete status for petty_cash on first nota upload
         if (itemData.purchase_type === 'petty_cash' && itemData.status !== 'completed') {
           updatePayload.status = 'completed';
+          itemWasAutoCompleted = true;
         }
       }
     }
@@ -65,6 +69,48 @@ export async function POST(
     }
     if (!updated || updated.length === 0) {
       return NextResponse.json({ error: 'Barang tidak ditemukan.' }, { status: 404 });
+    }
+
+    // If item was auto-completed via nota upload, check if request can be auto-completed too
+    if (itemWasAutoCompleted) {
+      const { data: reqData } = await supabase
+        .from('requests')
+        .select('request_code, status')
+        .eq('id', id)
+        .single();
+
+      const { data: allItems } = await supabase
+        .from('request_items')
+        .select('status')
+        .eq('request_id', id);
+
+      if (allItems && allItems.length > 0) {
+        const allReviewed = allItems.every((i) => i.status && i.status !== 'pending');
+        if (allReviewed) {
+          const anyCompleted = allItems.some((i) => i.status === 'completed');
+          const newRequestStatus = anyCompleted ? 'completed' : 'rejected';
+
+          if (reqData && reqData.status !== newRequestStatus) {
+            await supabase
+              .from('requests')
+              .update({ status: newRequestStatus, updated_at: new Date().toISOString() })
+              .eq('id', id);
+
+            await logRequestEvent({
+              request_id: id,
+              request_code: reqData.request_code,
+              action: 'updated',
+              actor: 'user',
+              changes: [{
+                field: 'status',
+                label: 'Status Permintaan',
+                from: reqData.status,
+                to: newRequestStatus,
+              }],
+            });
+          }
+        }
+      }
     }
   } else if (type === 'photo') {
     // Check max 3 photos

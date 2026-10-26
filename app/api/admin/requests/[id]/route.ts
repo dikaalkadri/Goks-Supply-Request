@@ -154,15 +154,22 @@ export async function PATCH(
     }
   }
 
-  // Request status follows its items: 'completed' (Selesai) once every item
-  // has been reviewed by admin, otherwise 'pending' (Menunggu).
+  // Request status follows its items once all have been reviewed:
+  // - all rejected                 → 'rejected'
+  // - any completed (rest rejected) → 'completed'
+  // - any still pending             → 'pending'
   const { data: items, error: itemsErr } = await supabase
     .from('request_items')
     .select('status')
     .eq('request_id', id);
   if (!itemsErr && items && items.length > 0) {
     const allReviewed = items.every((i) => i.status && i.status !== 'pending');
-    updateData.status = allReviewed ? 'completed' : 'pending';
+    if (allReviewed) {
+      const anyCompleted = items.some((i) => i.status === 'completed');
+      updateData.status = anyCompleted ? 'completed' : 'rejected';
+    } else {
+      updateData.status = 'pending';
+    }
   }
 
   const { data, error } = await supabase
