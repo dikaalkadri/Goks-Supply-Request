@@ -13,7 +13,6 @@ import AdminNotificationBell from '@/components/admin/AdminNotificationBell';
 const navItems = [
   { href: '/admin/dashboard',        label: 'Dashboard',              icon: LayoutDashboard },
   { href: '/admin/requests',         label: 'Permintaan',             icon: FileText },
-  { href: '/admin/distribution',     label: 'Distribusi Barang',      icon: BarChart2 },
   { href: '/admin/purchase-history', label: 'Riwayat Pembelian',      icon: ClipboardList },
   { href: '/admin/items',            label: 'Master Barang',          icon: Package },
   { href: '/admin/outlets',          label: 'Outlet',                 icon: Building2 },
