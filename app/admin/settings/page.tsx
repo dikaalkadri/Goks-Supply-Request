@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Lock, Save } from 'lucide-react';
+import { Lock, RefreshCw, Save } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminPage from '@/components/admin/AdminPage';
 import Button from '@/components/ui/Button';
@@ -13,6 +13,25 @@ export default function AdminSettingsPage() {
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncStatus = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/admin/requests/sync-status', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      if (data.updated === 0) {
+        toast.success('Semua status permintaan sudah sinkron.');
+      } else {
+        toast.success(`${data.updated} permintaan berhasil diperbarui statusnya.`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal menyinkronkan status.');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleUpdatePin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +103,27 @@ export default function AdminSettingsPage() {
               </Button>
             </div>
           </form>
+        </div>
+
+        {/* Sync Status Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-w-2xl">
+          <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+            <RefreshCw className="h-5 w-5 text-gray-400" /> Sinkronisasi Status Permintaan
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Perbarui status permintaan lama yang belum ter-update secara otomatis.
+            Aman untuk dijalankan berulang kali.
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            loading={syncing}
+            onClick={handleSyncStatus}
+            id="btn-sync-request-status"
+          >
+            <RefreshCw className="h-4 w-4" />
+            {syncing ? 'Menyinkronkan...' : 'Sinkronkan Sekarang'}
+          </Button>
         </div>
       </AdminPage>
     </AdminLayout>

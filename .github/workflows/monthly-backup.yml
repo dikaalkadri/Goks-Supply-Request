@@ -1,0 +1,72 @@
+name: Monthly Database Backup to Google Drive
+
+on:
+  schedule:
+    # Berjalan setiap tanggal 1 tiap bulan pukul 01:00 UTC (08:00 WIB)
+    - cron: '0 1 1 * *'
+  # Memungkinkan trigger backup manual dari tab Actions di GitHub
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL Client & Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client gzip python3 python3-pip
+          pip3 install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+      - name: Run pg_dump from Supabase
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          TIMESTAMP=$(date +'%Y-%m-%d_%H%M%S')
+          BACKUP_FILE="backup_supabase_${TIMESTAMP}.sql.gz"
+          echo "BACKUP_FILE=${BACKUP_FILE}" >> $GITHUB_ENV
+
+          echo "Mengambil data dari Supabase Postgres..."
+          pg_dump "${SUPABASE_DB_URL}" | gzip > "${BACKUP_FILE}"
+          echo "Dump selesai: $(ls -lh ${BACKUP_FILE})"
+
+      - name: Upload Backup to Google Drive
+        env:
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          python3 - << 'EOF'
+          import os
+          import json
+          from google.oauth2 import service_account
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaFileUpload
+
+          service_account_info = json.loads(os.environ['GDRIVE_SERVICE_ACCOUNT_JSON'])
+          folder_id = os.environ['GDRIVE_FOLDER_ID']
+          backup_file = os.environ['BACKUP_FILE']
+
+          creds = service_account.Credentials.from_service_account_info(
+              service_account_info,
+              scopes=['https://www.googleapis.com/auth/drive.file']
+          )
+
+          service = build('drive', 'v3', credentials=creds)
+
+          file_metadata = {
+              'name': backup_file,
+              'parents': [folder_id]
+          }
+          media = MediaFileUpload(backup_file, mimetype='application/gzip', resumable=True)
+
+          file = service.files().create(
+              body=file_metadata,
+              media_body=media,
+              fields='id, name'
+          ).execute()
+
+          print(f"Sukses upload ke Google Drive! File ID: {file.get('id')}, Name: {file.get('name')}")
+          EOF
