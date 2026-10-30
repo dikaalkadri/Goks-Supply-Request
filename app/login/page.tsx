@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Store, Shield } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import InstallBanner from '@/components/pwa/InstallBanner';
 import { useOutletSession, resetOutletSessionCache } from '@/lib/auth/use-outlet-session';
 
 export default function OutletLoginPage() {
@@ -83,6 +84,7 @@ export default function OutletLoginPage() {
           </Link>
         </div>
       </header>
+      <InstallBanner />
 
       {/* Main Login Form */}
       <main className="max-w-sm w-full mx-auto px-4 py-12 flex-1 flex flex-col justify-center">

@@ -46,10 +46,14 @@ export default function PhotoUploader({
 
       setUploading(true);
       try {
-        // Compress
-        const compressed = type === 'photo'
-          ? await compressConditionPhoto(file)
-          : await compressReceipt(file);
+        // Compress – fall back to original if WebP encoding fails on older devices
+        const compressed = await (type === 'photo'
+          ? compressConditionPhoto(file)
+          : compressReceipt(file)
+        ).catch((err: unknown) => {
+          console.warn('[upload] compression failed, uploading original:', err);
+          return file;
+        });
 
         // Get signed URL
         const bucket = type === 'photo' ? 'request-condition-photos' : 'request-receipts';
@@ -138,7 +142,11 @@ export default function PhotoUploader({
             multiple={remaining > 1}
             className="hidden"
             disabled={uploading}
-            onChange={(e) => handleFiles(e.target.files)}
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              // Reset so the same file can be re-selected after a failed upload
+              e.target.value = '';
+            }}
           />
           {uploading ? (
             <Loader2 className="h-5 w-5 text-primary-500 animate-spin flex-shrink-0" />

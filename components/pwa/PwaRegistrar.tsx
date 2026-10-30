@@ -10,7 +10,17 @@ import { registerServiceWorker, syncPushSubscription } from '@/lib/push/client';
 export default function PwaRegistrar() {
   useEffect(() => {
     const reg = registerServiceWorker();
-    reg?.then(() => syncPushSubscription()).catch(() => undefined);
+    if (!reg) return;
+    reg
+      .then((registration) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.info('[PWA] Service Worker aktif:', registration?.scope);
+        }
+        return syncPushSubscription();
+      })
+      .catch((err) => {
+        console.warn('[PWA] Service Worker tidak dapat didaftarkan:', err);
+      });
   }, []);
 
   return null;

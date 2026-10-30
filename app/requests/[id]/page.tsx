@@ -64,9 +64,14 @@ function ItemCard({
 
     setUploadingType(type);
     try {
-      const compressed = type === 'photo'
-        ? await compressConditionPhoto(file)
-        : await compressReceipt(file);
+      // Compress – fall back to original if WebP encoding fails on older devices
+      const compressed = await (type === 'photo'
+        ? compressConditionPhoto(file)
+        : compressReceipt(file)
+      ).catch((err: unknown) => {
+        console.warn('[upload] compression failed, uploading original:', err);
+        return file;
+      });
       const bucket = type === 'photo' ? 'request-condition-photos' : 'request-receipts';
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
       const filePath = `${request.id}/${fileName}`;
